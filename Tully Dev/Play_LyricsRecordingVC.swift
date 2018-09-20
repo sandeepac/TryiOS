@@ -63,6 +63,7 @@ class Play_LyricsRecordingVC: UIViewController, UITextViewDelegate, selectedData
     @IBOutlet var bottom_play_img_height_constraint: NSLayoutConstraint!
     @IBOutlet var bottom_note_img_height_constraint: NSLayoutConstraint!
     
+    var collabration = String()
     var selected_project_key = ""
     var selected_project_name = ""
     var selected_audio_file_name = ""
@@ -123,6 +124,7 @@ class Play_LyricsRecordingVC: UIViewController, UITextViewDelegate, selectedData
     override func viewDidLoad()
     {
         super.viewDidLoad()
+        //if collabration = ""
         manager = CBCentralManager(delegate: self, queue: nil, options: nil)
         manager.delegate = self
         let screenWidth = UIScreen.main.bounds.width

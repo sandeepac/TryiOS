@@ -7,12 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		18BA557021535CCA003B41C4 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18BA556F21535CCA003B41C4 /* Message.swift */; };
+		18BA557221535CEE003B41C4 /* ChatVCCells.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18BA557121535CEE003B41C4 /* ChatVCCells.swift */; };
+		18D999112150CBEB00274F57 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 18D999102150CBEB00274F57 /* GoogleService-Info.plist */; };
+		18EF55AE214FAA4F0070582F /* ChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EF55AD214FAA4F0070582F /* ChatViewController.swift */; };
 		25DC0EDC202AEACB0093CC4E /* market_audio_list_tbl_Cell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25DC0EDB202AEACB0093CC4E /* market_audio_list_tbl_Cell.swift */; };
 		25DC0EDE202B1F350093CC4E /* DataAudioList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25DC0EDD202B1F350093CC4E /* DataAudioList.swift */; };
 		4912D4FE2141485500C6868D /* InviteVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4912D4FD2141485500C6868D /* InviteVC.swift */; };
 		4912D50021415B2600C6868D /* AcceptInviteVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4912D4FF21415B2600C6868D /* AcceptInviteVC.swift */; };
 		68053257FDF21CC9D1908F4C /* Pods_Tully_Dev.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3AAA66A92B1E89ACA177092E /* Pods_Tully_Dev.framework */; };
-		8F01BF42214128C200AB2B32 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8F01BF41214128C200AB2B32 /* GoogleService-Info.plist */; };
 		8F65BF9921428B4000E7E4FA /* SubscribeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F65BF9821428B4000E7E4FA /* SubscribeViewController.swift */; };
 		8F6C5EC7214FD04D000FE88F /* Singleton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F6C5EC6214FD04D000FE88F /* Singleton.swift */; };
 		DF010A8F205AE405000108F8 /* MyConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF010A8E205AE405000108F8 /* MyConstants.swift */; };
@@ -172,13 +175,16 @@
 
 /* Begin PBXFileReference section */
 		0AA2775F83E70C5F3AE2F36D /* Pods-Tully Dev.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tully Dev.release.xcconfig"; path = "Pods/Target Support Files/Pods-Tully Dev/Pods-Tully Dev.release.xcconfig"; sourceTree = "<group>"; };
+		18BA556F21535CCA003B41C4 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		18BA557121535CEE003B41C4 /* ChatVCCells.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatVCCells.swift; sourceTree = "<group>"; };
+		18D999102150CBEB00274F57 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		18EF55AD214FAA4F0070582F /* ChatViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewController.swift; sourceTree = "<group>"; };
 		25DC0EDB202AEACB0093CC4E /* market_audio_list_tbl_Cell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = market_audio_list_tbl_Cell.swift; sourceTree = "<group>"; };
 		25DC0EDD202B1F350093CC4E /* DataAudioList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataAudioList.swift; sourceTree = "<group>"; };
 		2D46C095095C17ADC4535BC4 /* Pods-Tully Dev.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tully Dev.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Tully Dev/Pods-Tully Dev.debug.xcconfig"; sourceTree = "<group>"; };
 		3AAA66A92B1E89ACA177092E /* Pods_Tully_Dev.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Tully_Dev.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4912D4FD2141485500C6868D /* InviteVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteVC.swift; sourceTree = "<group>"; };
 		4912D4FF21415B2600C6868D /* AcceptInviteVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptInviteVC.swift; sourceTree = "<group>"; };
-		8F01BF41214128C200AB2B32 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		8F65BF9821428B4000E7E4FA /* SubscribeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscribeViewController.swift; sourceTree = "<group>"; };
 		8F6C5EC6214FD04D000FE88F /* Singleton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Singleton.swift; sourceTree = "<group>"; };
 		DF010A8E205AE405000108F8 /* MyConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyConstants.swift; sourceTree = "<group>"; };
@@ -400,6 +406,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		18EF55AC214FA9EF0070582F /* Chat */ = {
+			isa = PBXGroup;
+			children = (
+				18EF55AD214FAA4F0070582F /* ChatViewController.swift */,
+				18BA556F21535CCA003B41C4 /* Message.swift */,
+				18BA557121535CEE003B41C4 /* ChatVCCells.swift */,
+			);
+			name = Chat;
+			sourceTree = "<group>";
+		};
 		25DC0EDA202AEA4C0093CC4E /* Marketplace */ = {
 			isa = PBXGroup;
 			children = (
@@ -696,13 +712,14 @@
 		FAB274DD1ECEF7EA00793A9D /* Tully Dev */ = {
 			isa = PBXGroup;
 			children = (
+				18EF55AC214FA9EF0070582F /* Chat */,
 				DFCF6A5F20E93E4B00397E92 /* superpowered */,
 				FA0AB1961FED6EB80005309F /* dictionarydb.sqlite3 */,
 				FAD6C0731EF500CB007B4B6E /* tully.png */,
 				DF7A47482051C13D0068E05F /* Ios.mp4 */,
 				FA0A6D4F1ED175F20007987A /* Tully Dev.entitlements */,
 				FAB274DE1ECEF7EA00793A9D /* AppDelegate.swift */,
-				8F01BF41214128C200AB2B32 /* GoogleService-Info.plist */,
+				18D999102150CBEB00274F57 /* GoogleService-Info.plist */,
 				DF10186220E96711004BF3A7 /* superpoweredRecord */,
 				FAF5FC161FC3D5A0001BC08B /* general */,
 				FAF84F1A1FBB1BEE00C01606 /* AppTimeOut */,
@@ -985,7 +1002,7 @@
 				FAC2FAEA1F1763B7003FF861 /* wave.gif in Resources */,
 				DF6400772108A9A000C803DB /* superpowered.storyboard in Resources */,
 				FAB274E61ECEF7EA00793A9D /* Assets.xcassets in Resources */,
-				8F01BF42214128C200AB2B32 /* GoogleService-Info.plist in Resources */,
+				18D999112150CBEB00274F57 /* GoogleService-Info.plist in Resources */,
 				FA0AB1971FED6EB90005309F /* dictionarydb.sqlite3 in Resources */,
 				FAB274E41ECEF7EA00793A9D /* Main.storyboard in Resources */,
 				DF7E4FC4212211540091A6F9 /* engineer.storyboard in Resources */,
@@ -1180,6 +1197,7 @@
 				FAE54F1F1EFC1B4E00101DB9 /* PlayLyricsRecordingVC.swift in Sources */,
 				8F65BF9921428B4000E7E4FA /* SubscribeViewController.swift in Sources */,
 				DF58BC0220C948E0003BD3A1 /* HomeFilesData.swift in Sources */,
+				18EF55AE214FAA4F0070582F /* ChatViewController.swift in Sources */,
 				DFBE640A20F092D9007A62D3 /* Superpowered.mm in Sources */,
 				DF947DA1211F3DB700807ED6 /* ConverFileVC.swift in Sources */,
 				FAC11B321F1BFBF00013D104 /* MySlider.swift in Sources */,
@@ -1200,6 +1218,7 @@
 				DFB07AB8207951B10092A580 /* MyLoopSlider.swift in Sources */,
 				DFAEB7AA205D547400D4F178 /* LoopRecordingVC.swift in Sources */,
 				FA71DA3C201892FD00730A8E /* HomeProjectCVCell.swift in Sources */,
+				18BA557221535CEE003B41C4 /* ChatVCCells.swift in Sources */,
 				DF191164205FC0DF003B7C3D /* HomePurchaseCVCell.swift in Sources */,
 				FABA45441ED2FD980021061C /* ForgotPwdVC.swift in Sources */,
 				FAD15EA3200F726100BA324A /* InviteEngineerVC.swift in Sources */,
@@ -1214,6 +1233,7 @@
 				FACCCF7B1EE7C75200610081 /* WordMeaningVC.swift in Sources */,
 				FAD346601EDC34F200ED219E /* SaveRecordingVC.swift in Sources */,
 				FADD52671EFCEDDE00B6C25A /* MyVariables.swift in Sources */,
+				18BA557021535CCA003B41C4 /* Message.swift in Sources */,
 				25DC0EDE202B1F350093CC4E /* DataAudioList.swift in Sources */,
 				FA5A4D1D2001CFFA00FC6182 /* section.swift in Sources */,
 				FA783C7A1ED9685E00719624 /* RateUsVC.swift in Sources */,

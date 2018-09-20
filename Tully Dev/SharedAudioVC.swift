@@ -711,28 +711,26 @@ class SharedAudioVC: UIViewController , AVAudioPlayerDelegate, UITableViewDelega
     }
     
     @IBAction func invite_btn_click(_ sender: UIButton) {
-//        let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
-//        userRef.child("settings").observeSingleEvent(of: .value, with: { (snapshot) in
-//
-//            if (snapshot.exists()){
-//                if(snapshot.hasChild("CollaborationSubscription")){
-//                    if let data = snapshot.childSnapshot(forPath: "CollaborationSubscription").value as? NSDictionary{
-//                        if let check = data.value(forKey: "isActive") as? Bool{
-//                            if(check){
+        let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
+        userRef.child("settings").observeSingleEvent(of: .value, with: { (snapshot) in
+
+            if (snapshot.exists()){
+                if(snapshot.hasChild("CollaborationSubscription")){
+                    if let data = snapshot.childSnapshot(forPath: "CollaborationSubscription").value as? NSDictionary{
+                        if let check = data.value(forKey: "isActive") as? Bool{
+                            if(check){
                                 let vc : InviteVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "InviteVC") as! InviteVC
-                                    vc.projectCurrentId = projectCurrentId
+                                vc.projectCurrentId = self.projectCurrentId
                                 self.present(vc, animated:true, completion:nil)
-                                print("successfully checked on firebase")
-//                            }
-//                        }
-//                    }
-//                } else {
-//                    let vc : SubscribeViewController = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "SubscribeViewController") as! SubscribeViewController
-//                    self.present(vc, animated:true, completion:nil)
-//                    print("currently on subscribe screen")
-//                }
-//            }
-//        })
+                            }
+                        }
+                    }
+                } else {
+                    let vc : SubscribeViewController = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "SubscribeViewController") as! SubscribeViewController
+                    self.present(vc, animated:true, completion:nil)
+                }
+            }
+        })
     }
     func getExpiryDate(){
         let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref

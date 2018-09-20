@@ -14,7 +14,7 @@ import Mixpanel
 
 class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataSource, AVAudioPlayerDelegate, shareSecureResponseProtocol
 {
-
+    
     //MARK: - Outlets
     
     @IBOutlet var project_name_lbl_ref: UILabel!
@@ -22,6 +22,9 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
     @IBOutlet var recording_cv_ref: UICollectionView!
     @IBOutlet var recording_counter_label: UILabel!
     @IBOutlet var recording_play_btn_ref: UIButton!
+    
+    @IBOutlet weak var collabration_btn: UIButton!
+    
     @IBOutlet var lyrics_cv_ref: UICollectionView!
     @IBOutlet var top_view_constraint_ref: NSLayoutConstraint!
     @IBOutlet var share_delete_view_ref: UIView!
@@ -86,82 +89,83 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
             audio_data.append(temp_audio_data)
             
             let vc : SharedAudioVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "SharedAudioSid") as! SharedAudioVC
-            let myData = self.lyrics_list[0]
-            vc.projectCurrentId = myData.project_key!
-            vc.project_main_rec = self.audio_data
-            vc.selected_index = 0
-            vc.come_as_present = true
-            vc.comeFromProject = true
-            vc.currentProjectId = current_project_id
-            vc.currentProjectName = current_project_nm
-            vc.currentFileName = self.current_project_main_rec_nm
-            vc.saved_audio_file_name = self.current_project_main_rec_nm
-            vc.selected_recording_url = destinationUrl
-            vc.count_recordings = self.record_list.count
+            print("Lyrics Data-> ",self.lyrics_list)
+            if self.lyrics_list.isEmpty{
+                self.navigationController?.pushViewController(vc, animated: true)
+            }else{
+                let myData = self.lyrics_list[0]
+                vc.projectCurrentId = myData.project_key!
+                vc.project_main_rec = self.audio_data
+                vc.selected_index = 0
+                vc.come_as_present = true
+                vc.comeFromProject = true
+                vc.currentProjectId = current_project_id
+                vc.currentProjectName = current_project_nm
+                vc.currentFileName = self.current_project_main_rec_nm
+                vc.saved_audio_file_name = self.current_project_main_rec_nm
+                vc.selected_recording_url = destinationUrl
+                vc.count_recordings = self.record_list.count
             
-            
-            if(lyrics_list.count > 0)
-            {
-                vc.get_lyrics_key = lyrics_list[0].lyrics_key!
-                vc.get_lyrics_text = lyrics_list[0].desc!
+                if(lyrics_list.count > 0)
+                {
+                    vc.get_lyrics_key = lyrics_list[0].lyrics_key!
+                    vc.get_lyrics_text = lyrics_list[0].desc!
+                }
+                self.navigationController?.pushViewController(vc, animated: true)
             }
-            
-            self.navigationController?.pushViewController(vc, animated: true)
-        }
-        else
-        {
-                if (Reachability.isConnectedToNetwork()){
-                    DispatchQueue.main.async
-                        {
-                            if(self.current_project_download_url != ""){
-                                let httpsReference = Storage.storage().reference(forURL: self.current_project_download_url)
-                                self.download_process_view_ref.alpha = 1.0
-                                self.tabBarController?.tabBar.items?[0].isEnabled = false
-                                self.tabBarController?.tabBar.items?[1].isEnabled = false
-                                self.tabBarController?.tabBar.items?[2].isEnabled = false
-                                self.tabBarController?.tabBar.items?[3].isEnabled = false
-                                self.tabBarController?.tabBar.items?[4].isEnabled = false
-                                let downloadTask = httpsReference.write(toFile: destinationUrl)
-                                downloadTask.observe(.progress) { snapshot in
-                                    
-                                    let percentComplete = 100.0 * Double(snapshot.progress!.completedUnitCount)
-                                        / Double(snapshot.progress!.totalUnitCount)
-                                    
-                                    if(percentComplete > 0)
-                                    {
-                                        self.processRing.setProgress(value: CGFloat(percentComplete), animationDuration: 0.01) {
-                                        }
+        } else {
+            if (Reachability.isConnectedToNetwork()){
+                DispatchQueue.main.async
+                    {
+                        if(self.current_project_download_url != ""){
+                            let httpsReference = Storage.storage().reference(forURL: self.current_project_download_url)
+                            self.download_process_view_ref.alpha = 1.0
+                            self.tabBarController?.tabBar.items?[0].isEnabled = false
+                            self.tabBarController?.tabBar.items?[1].isEnabled = false
+                            self.tabBarController?.tabBar.items?[2].isEnabled = false
+                            self.tabBarController?.tabBar.items?[3].isEnabled = false
+                            self.tabBarController?.tabBar.items?[4].isEnabled = false
+                            let downloadTask = httpsReference.write(toFile: destinationUrl)
+                            downloadTask.observe(.progress) { snapshot in
+                                
+                                let percentComplete = 100.0 * Double(snapshot.progress!.completedUnitCount)
+                                    / Double(snapshot.progress!.totalUnitCount)
+                                
+                                if(percentComplete > 0)
+                                {
+                                    self.processRing.setProgress(value: CGFloat(percentComplete), animationDuration: 0.01) {
                                     }
                                 }
-                                
-                                downloadTask.observe(.success) { snapshot in
-                                    // Download completed successfully
-                                    self.processRing.setProgress(value: 100, animationDuration: 0.1)
-                                    self.download_process_view_ref.alpha = 0.0
-                                    self.tabBarController?.tabBar.items?[0].isEnabled = true
-                                    self.tabBarController?.tabBar.items?[1].isEnabled = true
-                                    self.tabBarController?.tabBar.items?[2].isEnabled = true
-                                    self.tabBarController?.tabBar.items?[3].isEnabled = true
-                                    self.tabBarController?.tabBar.items?[4].isEnabled = true
-                                    self.processRing.setProgress(value: 0, animationDuration: 0.0)
-                                    self.main_rec()
-                                }
-                                downloadTask.observe(.failure, handler: { (snapshot) in
-                                    self.download_process_view_ref.alpha = 0.0
-                                    self.tabBarController?.tabBar.items?[0].isEnabled = true
-                                    self.tabBarController?.tabBar.items?[1].isEnabled = true
-                                    self.tabBarController?.tabBar.items?[2].isEnabled = true
-                                    self.tabBarController?.tabBar.items?[3].isEnabled = true
-                                    self.tabBarController?.tabBar.items?[4].isEnabled = true
-                                    MyConstants.normal_display_alert(msg_title: "Not Found", msg_desc: "Can not found this file in server.", action_title: "OK", myVC: self)
-                                })
-                            }else{
-                                MyConstants.normal_display_alert(msg_title: "Not Found", msg_desc: "Can not found this file in server.", action_title: "OK", myVC: self)
                             }
-                    }
-                } else {
-                    MyConstants.normal_display_alert(msg_title: "No Internet Connection", msg_desc: "For download - make sure your device is connected to the internet.", action_title: "OK", myVC: self)
+                            
+                            downloadTask.observe(.success) { snapshot in
+                                // Download completed successfully
+                                self.processRing.setProgress(value: 100, animationDuration: 0.1)
+                                self.download_process_view_ref.alpha = 0.0
+                                self.tabBarController?.tabBar.items?[0].isEnabled = true
+                                self.tabBarController?.tabBar.items?[1].isEnabled = true
+                                self.tabBarController?.tabBar.items?[2].isEnabled = true
+                                self.tabBarController?.tabBar.items?[3].isEnabled = true
+                                self.tabBarController?.tabBar.items?[4].isEnabled = true
+                                self.processRing.setProgress(value: 0, animationDuration: 0.0)
+                                self.main_rec()
+                            }
+                            downloadTask.observe(.failure, handler: { (snapshot) in
+                                self.download_process_view_ref.alpha = 0.0
+                                self.tabBarController?.tabBar.items?[0].isEnabled = true
+                                self.tabBarController?.tabBar.items?[1].isEnabled = true
+                                self.tabBarController?.tabBar.items?[2].isEnabled = true
+                                self.tabBarController?.tabBar.items?[3].isEnabled = true
+                                self.tabBarController?.tabBar.items?[4].isEnabled = true
+                                MyConstants.normal_display_alert(msg_title: "Not Found", msg_desc: "Can not found this file in server.", action_title: "OK", myVC: self)
+                            })
+                        } else {
+                            MyConstants.normal_display_alert(msg_title: "Not Found", msg_desc: "Can not found this file in server.", action_title: "OK", myVC: self)
+                        }
                 }
+            } else {
+                MyConstants.normal_display_alert(msg_title: "No Internet Connection", msg_desc: "For download - make sure your device is connected to the internet.", action_title: "OK", myVC: self)
+            }
         }
     }
     
@@ -172,13 +176,13 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
     }
     
     //MARK: - Get Data
-
+    
     func get_data()
     {
         let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
         userRef.child("projects").queryOrderedByKey().observe(.value, with: { (snapshot) in
-        self.lyrics_list.removeAll()
-        self.record_list.removeAll()
+            self.lyrics_list.removeAll()
+            self.record_list.removeAll()
             for snap in snapshot.children
             {
                 let userSnap = snap as! DataSnapshot
@@ -263,6 +267,11 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
                     }
                     self.record_list = self.record_list.reversed()
                     self.lyrics_list = self.lyrics_list.reversed()
+                    if self.lyrics_list.isEmpty{
+                        self.collabration_btn.isHidden = false
+                    }else{
+                        self.collabration_btn.isHidden = true
+                    }
                     self.lyrics_cv_ref.reloadData()
                     self.recording_cv_ref.reloadData()
                 }
@@ -370,7 +379,7 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
                     }
                     self.myActivityIndicator.startAnimating()
                     DispatchQueue.main.async
-                    {
+                        {
                             if(self.audio_play){
                                 self.player.stop()
                                 self.audio_play = false
@@ -408,95 +417,95 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
                                 }else{
                                     
                                     if (Reachability.isConnectedToNetwork()){
-                                            let visible = collectionView.indexPathsForVisibleItems
-                                            for vs in visible
-                                            {
-                                                let gen_index = NSIndexPath(row: vs.row, section: 0)
-                                                let myCell = collectionView.cellForItem(at: gen_index as IndexPath) as! home_recording_CVCell
-                                                myCell.change_imageToPlay()
-                                            }
-                                            if(selectedAudio.downloadURL != ""){
-                                                let httpsReference = Storage.storage().reference(forURL: selectedAudio.downloadURL!)
-                                                self.download_process_view_ref.alpha = 1.0
-                                                self.tabBarController?.tabBar.items?[0].isEnabled = false
-                                                self.tabBarController?.tabBar.items?[1].isEnabled = false
-                                                self.tabBarController?.tabBar.items?[2].isEnabled = false
-                                                self.tabBarController?.tabBar.items?[3].isEnabled = false
-                                                self.tabBarController?.tabBar.items?[4].isEnabled = false
-                                                DispatchQueue.main.async
-                                                    {
-                                                        let downloadTask = httpsReference.write(toFile: destinationUrl)
-                                                        downloadTask.observe(.progress) { snapshot in
-                                                            
-                                                            let percentComplete = 100.0 * Double(snapshot.progress!.completedUnitCount)
-                                                                / Double(snapshot.progress!.totalUnitCount)
-                                                            
-                                                            if(percentComplete > 0)
-                                                            {
-                                                                self.processRing.setProgress(value: CGFloat(percentComplete), animationDuration: 0.01) {
-                                                                }
-                                                            }
-                                                        }
+                                        let visible = collectionView.indexPathsForVisibleItems
+                                        for vs in visible
+                                        {
+                                            let gen_index = NSIndexPath(row: vs.row, section: 0)
+                                            let myCell = collectionView.cellForItem(at: gen_index as IndexPath) as! home_recording_CVCell
+                                            myCell.change_imageToPlay()
+                                        }
+                                        if(selectedAudio.downloadURL != ""){
+                                            let httpsReference = Storage.storage().reference(forURL: selectedAudio.downloadURL!)
+                                            self.download_process_view_ref.alpha = 1.0
+                                            self.tabBarController?.tabBar.items?[0].isEnabled = false
+                                            self.tabBarController?.tabBar.items?[1].isEnabled = false
+                                            self.tabBarController?.tabBar.items?[2].isEnabled = false
+                                            self.tabBarController?.tabBar.items?[3].isEnabled = false
+                                            self.tabBarController?.tabBar.items?[4].isEnabled = false
+                                            DispatchQueue.main.async
+                                                {
+                                                    let downloadTask = httpsReference.write(toFile: destinationUrl)
+                                                    downloadTask.observe(.progress) { snapshot in
                                                         
-                                                        downloadTask.observe(.success) { snapshot in
-                                                            self.processRing.setProgress(value: 100, animationDuration: 0.1)
-                                                            self.download_process_view_ref.alpha = 0.0
-                                                            self.tabBarController?.tabBar.items?[0].isEnabled = true
-                                                            self.tabBarController?.tabBar.items?[1].isEnabled = true
-                                                            self.tabBarController?.tabBar.items?[2].isEnabled = true
-                                                            self.tabBarController?.tabBar.items?[3].isEnabled = true
-                                                            self.tabBarController?.tabBar.items?[4].isEnabled = true
-                                                            self.processRing.setProgress(value: 0, animationDuration: 0.0)
-                                                            
-                                                            if FileManager.default.fileExists(atPath: destinationUrl.path)
-                                                            {
-                                                                do
-                                                                {
-                                                                    try self.player = AVAudioPlayer(contentsOf: URL(fileURLWithPath: destinationUrl.path))
-                                                                    self.player.prepareToPlay()
-                                                                    self.player.delegate = self
-                                                                    for vs in visible
-                                                                    {
-                                                                        let gen_index = NSIndexPath(row: vs.row, section: 0)
-                                                                        let myCell = collectionView.cellForItem(at: gen_index as IndexPath) as! home_recording_CVCell
-                                                                        if (vs.row == self.current_play_song_index){
-                                                                            myCell.change_imageToPause()
-                                                                        }else{
-                                                                            myCell.change_imageToPlay()
-                                                                        }
-                                                                    }
-                                                                    self.player.play()
-                                                                    self.audio_play = true
-                                                                    self.current_playing = true
-                                                                    self.myActivityIndicator.stopAnimating()
-                                                                }catch{
-                                                                    MyConstants.normal_display_alert(msg_title: "Error", msg_desc: "Not able to play audio.", action_title: "OK", myVC: self)
-                                                                    self.myActivityIndicator.stopAnimating()
-                                                                }
+                                                        let percentComplete = 100.0 * Double(snapshot.progress!.completedUnitCount)
+                                                            / Double(snapshot.progress!.totalUnitCount)
+                                                        
+                                                        if(percentComplete > 0)
+                                                        {
+                                                            self.processRing.setProgress(value: CGFloat(percentComplete), animationDuration: 0.01) {
                                                             }
                                                         }
-                                                        downloadTask.observe(.failure, handler: { (snapshot) in
-                                                            self.download_process_view_ref.alpha = 0.0
-                                                            self.tabBarController?.tabBar.items?[0].isEnabled = true
-                                                            self.tabBarController?.tabBar.items?[1].isEnabled = true
-                                                            self.tabBarController?.tabBar.items?[2].isEnabled = true
-                                                            self.tabBarController?.tabBar.items?[3].isEnabled = true
-                                                            self.tabBarController?.tabBar.items?[4].isEnabled = true
-                                                            MyConstants.normal_display_alert(msg_title: "Not Found", msg_desc: "Can not found this file in server.", action_title: "OK", myVC: self)
-                                                        })
-                                                }
-                                                self.myActivityIndicator.stopAnimating()
-                                            }else{
-                                                self.myActivityIndicator.stopAnimating()
-                                                MyConstants.normal_display_alert(msg_title: "No Internet Connection", msg_desc: "For download - make sure your device is connected to the internet", action_title: "OK", myVC: self)
+                                                    }
+                                                    
+                                                    downloadTask.observe(.success) { snapshot in
+                                                        self.processRing.setProgress(value: 100, animationDuration: 0.1)
+                                                        self.download_process_view_ref.alpha = 0.0
+                                                        self.tabBarController?.tabBar.items?[0].isEnabled = true
+                                                        self.tabBarController?.tabBar.items?[1].isEnabled = true
+                                                        self.tabBarController?.tabBar.items?[2].isEnabled = true
+                                                        self.tabBarController?.tabBar.items?[3].isEnabled = true
+                                                        self.tabBarController?.tabBar.items?[4].isEnabled = true
+                                                        self.processRing.setProgress(value: 0, animationDuration: 0.0)
+                                                        
+                                                        if FileManager.default.fileExists(atPath: destinationUrl.path)
+                                                        {
+                                                            do
+                                                            {
+                                                                try self.player = AVAudioPlayer(contentsOf: URL(fileURLWithPath: destinationUrl.path))
+                                                                self.player.prepareToPlay()
+                                                                self.player.delegate = self
+                                                                for vs in visible
+                                                                {
+                                                                    let gen_index = NSIndexPath(row: vs.row, section: 0)
+                                                                    let myCell = collectionView.cellForItem(at: gen_index as IndexPath) as! home_recording_CVCell
+                                                                    if (vs.row == self.current_play_song_index){
+                                                                        myCell.change_imageToPause()
+                                                                    }else{
+                                                                        myCell.change_imageToPlay()
+                                                                    }
+                                                                }
+                                                                self.player.play()
+                                                                self.audio_play = true
+                                                                self.current_playing = true
+                                                                self.myActivityIndicator.stopAnimating()
+                                                            }catch{
+                                                                MyConstants.normal_display_alert(msg_title: "Error", msg_desc: "Not able to play audio.", action_title: "OK", myVC: self)
+                                                                self.myActivityIndicator.stopAnimating()
+                                                            }
+                                                        }
+                                                    }
+                                                    downloadTask.observe(.failure, handler: { (snapshot) in
+                                                        self.download_process_view_ref.alpha = 0.0
+                                                        self.tabBarController?.tabBar.items?[0].isEnabled = true
+                                                        self.tabBarController?.tabBar.items?[1].isEnabled = true
+                                                        self.tabBarController?.tabBar.items?[2].isEnabled = true
+                                                        self.tabBarController?.tabBar.items?[3].isEnabled = true
+                                                        self.tabBarController?.tabBar.items?[4].isEnabled = true
+                                                        MyConstants.normal_display_alert(msg_title: "Not Found", msg_desc: "Can not found this file in server.", action_title: "OK", myVC: self)
+                                                    })
                                             }
-                                        } else {
+                                            self.myActivityIndicator.stopAnimating()
+                                        }else{
                                             self.myActivityIndicator.stopAnimating()
                                             MyConstants.normal_display_alert(msg_title: "No Internet Connection", msg_desc: "For download - make sure your device is connected to the internet", action_title: "OK", myVC: self)
                                         }
+                                    } else {
+                                        self.myActivityIndicator.stopAnimating()
+                                        MyConstants.normal_display_alert(msg_title: "No Internet Connection", msg_desc: "For download - make sure your device is connected to the internet", action_title: "OK", myVC: self)
                                     }
                                 }
                             }
+                    }
                 }
             }
             return myCell
@@ -530,7 +539,7 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
     }
     
     //MARK: - Share and delete
- 
+    
     @IBAction func open_hide_share_delete_view(_ sender: Any)
     {
         if(is_open_share_delet_view)
@@ -657,7 +666,7 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
     }
     
     //MARK: - Share Security
-   
+    
     func shareSecureResponse(allowDownload: Bool, postStringData: String, urlString: String, isCancel: Bool, token: String, type: String, expireTime: Int) {
         if(!isCancel){
             share_data(myString : postStringData, MyUrlString : urlString, allowDownload_shareSecurity : allowDownload, token: token, expireTime: expireTime)
@@ -726,7 +735,12 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
         }
         
     }
-    
+    //MARK: - Collabration Cliked
+    @IBAction func colabrationBtnTapped(_ sender: Any) {
+        let vc = self.storyboard?.instantiateViewController(withIdentifier: "PlayLyricsRecordingSid") as! Play_LyricsRecordingVC
+        vc.collabration = "collabration"
+        self.present(vc, animated: true, completion: nil)
+    }
     
     //MARK: - Close View
     

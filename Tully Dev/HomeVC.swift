@@ -109,7 +109,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         select_any_tbl_view_ref.tableFooterView = UIView()
         setNotificationToken()
         //touchid_settings()
-       // get_copy_to_tully_data()
+        // get_copy_to_tully_data()
     }
     func checkPushNotificationKey(){
         if let found = UserDefaults.standard.value(forKey: "setPushNotificationKey") as? Bool{
@@ -209,7 +209,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
     
     override func viewDidAppear(_ animated: Bool)
     {
-      //if(MyVariables.home_tutorial){
+        //if(MyVariables.home_tutorial){
         let myrect = CGRect(x: 0, y: 0, width: scrollview_ref.frame.width, height: scrollview_ref.frame.height)
         scrollview_ref.scrollRectToVisible(myrect, animated: true)
         
@@ -245,7 +245,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
             UIApplication.shared.keyWindow?.rootViewController = vc
             self.present(vc, animated: true, completion: nil)
         }
-       // }
+        // }
     }
     
     // MARK :- For Recording 
@@ -261,11 +261,11 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
             break
         case AVAudioSessionRecordPermission.undetermined:
             AVAudioSession.sharedInstance().requestRecordPermission({ (allowed) in
-                    if allowed {
-                        self.isAudioRecordingGranted = true
-                    } else {
-                        self.isAudioRecordingGranted = false
-                    }
+                if allowed {
+                    self.isAudioRecordingGranted = true
+                } else {
+                    self.isAudioRecordingGranted = false
+                }
             })
             break
         default:
@@ -367,8 +367,8 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                             print(error.localizedDescription)
                         }
                     })
-                
-                userRef.child("remaining_upload").child("copytotully").child(copytotully_key).setValue(copytotully_data, withCompletionBlock: { (error, database_ref) in
+                    
+                    userRef.child("remaining_upload").child("copytotully").child(copytotully_key).setValue(copytotully_data, withCompletionBlock: { (error, database_ref) in
                         
                         if let error = error
                         {
@@ -426,7 +426,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
             do
             {
                 let directoryContents = try FileManager.default.contentsOfDirectory(at: mydir, includingPropertiesForKeys: nil, options: [])
-                 let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
+                let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
                 
                 for myUrl in directoryContents
                 {
@@ -461,9 +461,9 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                             {
                                 contentType = "audio/wav"
                             }
-                             metadata1.contentType = contentType
+                            metadata1.contentType = contentType
                             
-                           
+                            
                             
                             let cname =  myfilename.split(separator: ".").first!
                             let current_name = cname.removingPercentEncoding!
@@ -476,7 +476,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                                 }
                             })
                             
-                        userRef.child("remaining_upload").child("copytotully").child(copytotully_key).setValue(copytotully_data, withCompletionBlock: { (error, database_ref) in
+                            userRef.child("remaining_upload").child("copytotully").child(copytotully_key).setValue(copytotully_data, withCompletionBlock: { (error, database_ref) in
                                 
                                 if let error = error
                                 {
@@ -516,95 +516,95 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         }
         else
         {
-        if let uid = Auth.auth().currentUser?.uid{
-            let userRef = FirebaseManager.getRefference().child(uid).ref
-            
-            userRef.child("masters").queryOrdered(byChild: "parent_id").queryEqual(toValue: "0").observe(.value, with: { (snapshot) in
-            
-            //userRef.child("masters").queryOrdered(byChild: "parent_id").queryEqual(toValue: "0").observeSingleEvent(of: .value, with: { (snapshot) in
-                if snapshot.exists(){
-                    self.master_data.removeAll()
-                    for snap in snapshot.children{
-                        let userSnap = snap as! DataSnapshot
-                        let master_key = userSnap.key
-                        let master_value = userSnap.value as! NSDictionary
-                        
-                        var name = ""
-                        var type = ""
-                        var count = 0
-                        var downloadUrl = ""
-                        var lyrics = ""
-                        var fname = ""
-                        
-                        if let current_name = master_value.value(forKey: "name") as? String{
-                            name = current_name
-                        }
-                        
-                        if let current_type = master_value.value(forKey: "type") as? String{
-                            type = current_type
-                        }
-                        
-                        if let current_count = master_value.value(forKey: "count") as? Int{
-                            count = current_count
-                        }
-                        
-                        if let current_size = master_value.value(forKey: "size") as? Int64{
-                            count = Int(current_size/1000)
-                        }
-                        
-                        if let current_downloadUrl = master_value.value(forKey: "downloadURL") as? String{
-                            downloadUrl = current_downloadUrl
-                        }
-                        
-                        if let current_lyrics = master_value.value(forKey: "lyrics") as? String{
-                            lyrics = current_lyrics
-                        }
-                        
-                        if let current_fname = master_value.value(forKey: "filename") as? String{
-                            fname = current_fname
-                        }
-                        
-                        var bpm = 0
-                        var key = ""
-                        
-                        if let audioBpm = master_value.value(forKey: "bpm") as? Int{
-                            bpm = audioBpm
-                        }
-                        if let audioKey = master_value.value(forKey: "key") as? String{
-                            key = audioKey
-                        }
+            if let uid = Auth.auth().currentUser?.uid{
+                let userRef = FirebaseManager.getRefference().child(uid).ref
+                
+                userRef.child("masters").queryOrdered(byChild: "parent_id").queryEqual(toValue: "0").observe(.value, with: { (snapshot) in
                     
-                        
-                        let masterdata = MasterData(id: master_key, name: name, parent_id: "0", type: type, count: count, downloadUrl: downloadUrl, lyrics: lyrics, filename: fname, bpm: bpm, key: key)
-                        
-                        self.master_data.append(masterdata)
-                        self.home_master_collectionview_ref.reloadData()
-                        if(self.current_selected_type == "master" && self.any_view_open_flag == true){
-                            self.select_any_tbl_view_ref.reloadData()
-//                            let layout_any : UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-//                            layout_any.sectionInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
-//                            let master_width = self.select_any_collection_view_ref.frame.width
-//                            layout_any.scrollDirection = UICollectionViewScrollDirection.vertical
-//                            layout_any.itemSize = CGSize(width: master_width/3.7, height: 82)
-//                            layout_any.minimumInteritemSpacing = 0
-//                            layout_any.minimumLineSpacing = 20
-//                            self.select_any_collection_view_ref.reloadData()
-//                            self.select_any_collection_view_ref.collectionViewLayout = layout_any
+                    //userRef.child("masters").queryOrdered(byChild: "parent_id").queryEqual(toValue: "0").observeSingleEvent(of: .value, with: { (snapshot) in
+                    if snapshot.exists(){
+                        self.master_data.removeAll()
+                        for snap in snapshot.children{
+                            let userSnap = snap as! DataSnapshot
+                            let master_key = userSnap.key
+                            let master_value = userSnap.value as! NSDictionary
+                            
+                            var name = ""
+                            var type = ""
+                            var count = 0
+                            var downloadUrl = ""
+                            var lyrics = ""
+                            var fname = ""
+                            
+                            if let current_name = master_value.value(forKey: "name") as? String{
+                                name = current_name
+                            }
+                            
+                            if let current_type = master_value.value(forKey: "type") as? String{
+                                type = current_type
+                            }
+                            
+                            if let current_count = master_value.value(forKey: "count") as? Int{
+                                count = current_count
+                            }
+                            
+                            if let current_size = master_value.value(forKey: "size") as? Int64{
+                                count = Int(current_size/1000)
+                            }
+                            
+                            if let current_downloadUrl = master_value.value(forKey: "downloadURL") as? String{
+                                downloadUrl = current_downloadUrl
+                            }
+                            
+                            if let current_lyrics = master_value.value(forKey: "lyrics") as? String{
+                                lyrics = current_lyrics
+                            }
+                            
+                            if let current_fname = master_value.value(forKey: "filename") as? String{
+                                fname = current_fname
+                            }
+                            
+                            var bpm = 0
+                            var key = ""
+                            
+                            if let audioBpm = master_value.value(forKey: "bpm") as? Int{
+                                bpm = audioBpm
+                            }
+                            if let audioKey = master_value.value(forKey: "key") as? String{
+                                key = audioKey
+                            }
+                            
+                            
+                            let masterdata = MasterData(id: master_key, name: name, parent_id: "0", type: type, count: count, downloadUrl: downloadUrl, lyrics: lyrics, filename: fname, bpm: bpm, key: key)
+                            
+                            self.master_data.append(masterdata)
+                            self.home_master_collectionview_ref.reloadData()
+                            if(self.current_selected_type == "master" && self.any_view_open_flag == true){
+                                self.select_any_tbl_view_ref.reloadData()
+                                //                            let layout_any : UICollectionViewFlowLayout = UICollectionViewFlowLayout()
+                                //                            layout_any.sectionInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+                                //                            let master_width = self.select_any_collection_view_ref.frame.width
+                                //                            layout_any.scrollDirection = UICollectionViewScrollDirection.vertical
+                                //                            layout_any.itemSize = CGSize(width: master_width/3.7, height: 82)
+                                //                            layout_any.minimumInteritemSpacing = 0
+                                //                            layout_any.minimumLineSpacing = 20
+                                //                            self.select_any_collection_view_ref.reloadData()
+                                //                            self.select_any_collection_view_ref.collectionViewLayout = layout_any
+                            }
                         }
+                        self.get_master_size()
+                    }else{
+                        self.home_master_collectionview_ref.reloadData()
+                        self.select_any_tbl_view_ref.reloadData()
                     }
-                    self.get_master_size()
-                }else{
-                    self.home_master_collectionview_ref.reloadData()
-                    self.select_any_tbl_view_ref.reloadData()
-                }
-            })
+                })
             }
         }
- 
+        
     }
     
     func get_master_size(){
-     
+        
         if let uid = Auth.auth().currentUser?.uid{
             let userRef = FirebaseManager.getRefference().child(uid).ref
             
@@ -848,73 +848,83 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         }
         else
         {
-        myActivityIndicator.startAnimating()
-        if let uid = Auth.auth().currentUser?.uid{
-            let userRef = FirebaseManager.getRefference().child(uid).ref
-            
-            userRef.child("copytotully").queryOrderedByKey().observeSingleEvent(of: .value, with: { (snapshot) in
-                if snapshot.exists(){
-                    HomeFileData1.removeAll()
-                   
-                    for snap in snapshot.children
-                    {
-                        let userSnap = snap as! DataSnapshot
-                        let rec_key = userSnap.key
-                        let rec_dict = userSnap.value as? [String : AnyObject]
-                        let name = rec_dict?["title"] as! String
-                        let tid = rec_dict?["filename"] as! String
+            myActivityIndicator.startAnimating()
+            if let uid = Auth.auth().currentUser?.uid{
+                let userRef = FirebaseManager.getRefference().child(uid).ref
+                
+                userRef.child("copytotully").queryOrderedByKey().observeSingleEvent(of: .value, with: { (snapshot) in
+                    if snapshot.exists(){
+                        HomeFileData1.removeAll()
                         
-                        var byte_size : Int64 = 0
-                        if let bsize = rec_dict?["size"] as? Int64{
-                            byte_size = bsize
-                        }
-                        
-                        var myurl = rec_dict?["downloadURL"] as? String
-                        
-                        if(myurl == nil){
-                            myurl = ""
-                        }
-                        
-                        var bpm = 0
-                        var key = ""
-                        
-                        if let audioBpm = rec_dict?["bpm"] as? Int{
-                            bpm = audioBpm
-                        }
-                        if let audioKey = rec_dict?["key"] as? String{
-                            key = audioKey
-                        }
-                        
-                        let kb_size = ByteCountFormatter.string(fromByteCount: byte_size, countStyle: .file)
-                        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-                        let mydir = documentsDirectory.appendingPathComponent("copytoTully/" + tid)
-                        var have_local_file = false
-                        
-                        if(FileManager.default.fileExists(atPath: mydir.path))
+                        for snap in snapshot.children
                         {
-                            have_local_file = true
-                            do
+                            let userSnap = snap as! DataSnapshot
+                            let rec_key = userSnap.key
+                            let rec_dict = userSnap.value as? [String : AnyObject]
+                            let name = rec_dict?["title"] as! String
+                            let tid = rec_dict?["filename"] as! String
+                            
+                            var byte_size : Int64 = 0
+                            if let bsize = rec_dict?["size"] as? Int64{
+                                byte_size = bsize
+                            }
+                            
+                            var myurl = rec_dict?["downloadURL"] as? String
+                            
+                            if(myurl == nil){
+                                myurl = ""
+                            }
+                            
+                            var bpm = 0
+                            var key = ""
+                            
+                            if let audioBpm = rec_dict?["bpm"] as? Int{
+                                bpm = audioBpm
+                            }
+                            if let audioKey = rec_dict?["key"] as? String{
+                                key = audioKey
+                            }
+                            
+                            let kb_size = ByteCountFormatter.string(fromByteCount: byte_size, countStyle: .file)
+                            let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                            let mydir = documentsDirectory.appendingPathComponent("copytoTully/" + tid)
+                            var have_local_file = false
+                            
+                            if(FileManager.default.fileExists(atPath: mydir.path))
                             {
-                                let fileAttributes = try FileManager.default.attributesOfItem(atPath: mydir.path)
-                                let creationDate = fileAttributes[FileAttributeKey.creationDate] as! Date
-                                let currentDate = Date()
-                                let diff = currentDate.interval(ofComponent: .day, fromDate: creationDate)
-                                
-                                if( diff > 29 ){
-                                    do{
-                                        try FileManager.default.removeItem(atPath: mydir.path)
-                                    }catch let error as NSError{
-                                        self.display_alert(msg_title: "Error !", msg_desc: error.localizedDescription, action_title: "Ok")
+                                have_local_file = true
+                                do
+                                {
+                                    let fileAttributes = try FileManager.default.attributesOfItem(atPath: mydir.path)
+                                    let creationDate = fileAttributes[FileAttributeKey.creationDate] as! Date
+                                    let currentDate = Date()
+                                    let diff = currentDate.interval(ofComponent: .day, fromDate: creationDate)
+                                    
+                                    if( diff > 29 ){
+                                        do{
+                                            try FileManager.default.removeItem(atPath: mydir.path)
+                                        }catch let error as NSError{
+                                            self.display_alert(msg_title: "Error !", msg_desc: error.localizedDescription, action_title: "Ok")
+                                        }
+                                    }
+                                } catch let error {
+                                    print("Error getting file modification attribute date: \(error.localizedDescription)")
+                                }
+                            }
+                            
+                            if(self.search_text != "")
+                            {
+                                if name.lowercased().range(of: self.search_text) != nil
+                                {
+                                    if(rec_key == "-L1111aaaaaaaaaaaaaa"){
+                                        free_beat = HomeFilesData(uid : rec_key, audio_url: mydir, audio_name: name, audio_size: kb_size, downloadURL : myurl!, local_file: have_local_file, tid: tid, type: "freebeat", bpm: bpm, key: key)
+                                    }else{
+                                        let temp_audio_data = HomeFilesData(uid : rec_key, audio_url: mydir, audio_name: name, audio_size: kb_size, downloadURL : myurl!, local_file: have_local_file, tid: tid, type: "copytotully", bpm: bpm, key: key)
+                                        HomeFileData1.append(temp_audio_data)
                                     }
                                 }
-                            } catch let error {
-                                print("Error getting file modification attribute date: \(error.localizedDescription)")
                             }
-                        }
-                        
-                        if(self.search_text != "")
-                        {
-                            if name.lowercased().range(of: self.search_text) != nil
+                            else
                             {
                                 if(rec_key == "-L1111aaaaaaaaaaaaaa"){
                                     free_beat = HomeFilesData(uid : rec_key, audio_url: mydir, audio_name: name, audio_size: kb_size, downloadURL : myurl!, local_file: have_local_file, tid: tid, type: "freebeat", bpm: bpm, key: key)
@@ -924,82 +934,72 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                                 }
                             }
                         }
-                        else
-                        {
-                            if(rec_key == "-L1111aaaaaaaaaaaaaa"){
-                                free_beat = HomeFilesData(uid : rec_key, audio_url: mydir, audio_name: name, audio_size: kb_size, downloadURL : myurl!, local_file: have_local_file, tid: tid, type: "freebeat", bpm: bpm, key: key)
-                            }else{
-                                let temp_audio_data = HomeFilesData(uid : rec_key, audio_url: mydir, audio_name: name, audio_size: kb_size, downloadURL : myurl!, local_file: have_local_file, tid: tid, type: "copytotully", bpm: bpm, key: key)
-                                HomeFileData1.append(temp_audio_data)
-                            }
+                        
+                        self.HomeFileData.removeAll()
+                        
+                        for data in HomeFileData2{
+                            self.HomeFileData.append(data)
+                        }
+                        
+                        for data in HomeFileData1{
+                            self.HomeFileData.append(data)
+                        }
+                        
+                    }else{
+                        self.HomeFileData.removeAll()
+                        
+                        for data in HomeFileData2{
+                            self.HomeFileData.append(data)
+                        }
+                        
+                        for data in HomeFileData1{
+                            self.HomeFileData.append(data)
                         }
                     }
                     
-                    self.HomeFileData.removeAll()
                     
-                    for data in HomeFileData2{
-                        self.HomeFileData.append(data)
-                    }
                     
-                    for data in HomeFileData1{
-                        self.HomeFileData.append(data)
-                    }
-                    
-                }else{
-                    self.HomeFileData.removeAll()
-                    
-                    for data in HomeFileData2{
-                        self.HomeFileData.append(data)
-                    }
-                    
-                    for data in HomeFileData1{
-                        self.HomeFileData.append(data)
-                    }
-                }
-                
-                
-                
-                if(self.HomeFileData.count >= 0)
-                {
-                    
-                    let myArrayOfTuples = self.HomeFileData.sorted{
-                        guard let d1 = $0.uid, let d2 = $1.uid else { return false }
-                        return d1 < d2
-                    }
-                    self.HomeFileData = myArrayOfTuples
-                    
-                    if(free_beat != nil){
-                        self.HomeFileData.append(free_beat!)
-                    }
-                    
-                    let temp_audio_data = HomeFilesData(uid : "tully", audio_url: URL(string: "http://tullyconnect.com")!, audio_name: "Getting Started", audio_size: "Video", downloadURL : "", local_file: false, tid: "", type: "video", bpm: 0, key: "")
-                    self.HomeFileData.append(temp_audio_data)
-                    
-                    self.HomeFileData.reverse()
-                    
-                    if(self.current_selected_type == "file"  && self.any_view_open_flag == true){
-                        self.select_any_tbl_view_ref.reloadData()
+                    if(self.HomeFileData.count >= 0)
+                    {
+                        
+                        let myArrayOfTuples = self.HomeFileData.sorted{
+                            guard let d1 = $0.uid, let d2 = $1.uid else { return false }
+                            return d1 < d2
+                        }
+                        self.HomeFileData = myArrayOfTuples
+                        
+                        if(free_beat != nil){
+                            self.HomeFileData.append(free_beat!)
+                        }
+                        
+                        let temp_audio_data = HomeFilesData(uid : "tully", audio_url: URL(string: "http://tullyconnect.com")!, audio_name: "Getting Started", audio_size: "Video", downloadURL : "", local_file: false, tid: "", type: "video", bpm: 0, key: "")
+                        self.HomeFileData.append(temp_audio_data)
+                        
+                        self.HomeFileData.reverse()
+                        
+                        if(self.current_selected_type == "file"  && self.any_view_open_flag == true){
+                            self.select_any_tbl_view_ref.reloadData()
+                        }else{
+                            let layout_file : UICollectionViewFlowLayout = UICollectionViewFlowLayout()
+                            layout_file.sectionInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+                            let file_width = self.home_file_collectionview_ref.frame.width
+                            layout_file.scrollDirection = UICollectionViewScrollDirection.vertical
+                            layout_file.itemSize = CGSize(width: file_width/3.7, height: 82)
+                            layout_file.minimumInteritemSpacing = 0
+                            layout_file.minimumLineSpacing = 20
+                            self.home_file_collectionview_ref.reloadData()
+                            self.home_file_collectionview_ref.collectionViewLayout = layout_file
+                            let new_height = CGFloat(((self.HomeFileData.count/3) * 102))
+                            let scroll_height = ((CGFloat(self.have_file_view_height) + new_height) - 50)
+                            //let scroll_height = ((CGFloat(self.have_file_view_height) + new_height) - 50 - 137)
+                            self.height_constraint_of_have_file_view.constant = scroll_height
+                        }
+                        self.myActivityIndicator.stopAnimating()
                     }else{
-                        let layout_file : UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-                        layout_file.sectionInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
-                        let file_width = self.home_file_collectionview_ref.frame.width
-                        layout_file.scrollDirection = UICollectionViewScrollDirection.vertical
-                        layout_file.itemSize = CGSize(width: file_width/3.7, height: 82)
-                        layout_file.minimumInteritemSpacing = 0
-                        layout_file.minimumLineSpacing = 20
-                        self.home_file_collectionview_ref.reloadData()
-                        self.home_file_collectionview_ref.collectionViewLayout = layout_file
-                        let new_height = CGFloat(((self.HomeFileData.count/3) * 102))
-                        let scroll_height = ((CGFloat(self.have_file_view_height) + new_height) - 50)
-                        //let scroll_height = ((CGFloat(self.have_file_view_height) + new_height) - 50 - 137)
-                        self.height_constraint_of_have_file_view.constant = scroll_height
+                        self.myActivityIndicator.stopAnimating()
                     }
-                    self.myActivityIndicator.stopAnimating()
-                }else{
-                    self.myActivityIndicator.stopAnimating()
-                }
-                
-            })
+                    
+                })
             }
         }
     }
@@ -1015,13 +1015,13 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
     func btn_all_click()
     {
         
-            self.display_all_data_flag = true
-            self.project_data.removeAll()
-            self.master_data.removeAll()
-            self.HomeFileData.removeAll()
-            self.get_master_data()
-            self.get_project_data()
-            self.get_files_data()
+        self.display_all_data_flag = true
+        self.project_data.removeAll()
+        self.master_data.removeAll()
+        self.HomeFileData.removeAll()
+        self.get_master_data()
+        self.get_project_data()
+        self.get_files_data()
         
         
     }
@@ -1211,7 +1211,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if(current_selected_type == "master"){
             let current_data = master_data[indexPath.row]
-    
+            
             if current_data.type == "folder"{
                 let vc : MasterDataDisplayVC = UIStoryboard(name: "master", bundle: nil).instantiateViewController(withIdentifier: "master_data_vc_sid") as! MasterDataDisplayVC
                 vc.parentID = current_data.id!
@@ -1299,7 +1299,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                 self.add_engineer_request_tbl.alpha = 0.0
             }
             return total
-           
+            
         }else if collectionView == home_project_collectionview_ref{
             return project_data.count
         }else{
@@ -1388,7 +1388,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
     
     func addAnnotiationMaster(press : UILongPressGestureRecognizer)
     {
-
+        
         var indexPath : IndexPath? = nil
         
         if(select_any_tbl_view_ref.alpha == 1.0){
@@ -1399,7 +1399,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         }else{
             current_selected_type="master"
             let p = press.location(in: self.home_master_collectionview_ref)
-             indexPath = self.home_master_collectionview_ref.indexPathForItem(at: p)
+            indexPath = self.home_master_collectionview_ref.indexPathForItem(at: p)
         }
         //let p = press.location(in: self.home_master_collectionview_ref)
         //let indexPath = self.home_master_collectionview_ref.indexPathForItem(at: p)
@@ -1583,15 +1583,54 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                 vc.get_lyrics_text = master_file_data[selected_file].lyrics!
                 self.navigationController?.pushViewController(vc, animated: true)
             }
-        }else if(collectionView == home_project_collectionview_ref){
-            
+        } else if(collectionView == home_project_collectionview_ref){
+            var id_invite = String()
             let current_data = project_data[indexPath.row]
             let vc = self.storyboard?.instantiateViewController(withIdentifier: "home_project_sid") as! HomeProjectVC
             vc.current_project_id = current_data.myId!
             vc.current_project_nm = current_data.nm!
             vc.current_project_download_url = current_data.download_url!
             vc.come_from_push = true
-            self.navigationController?.pushViewController(vc, animated: true)
+            
+            let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
+            userRef.child("projects").observeSingleEvent(of: .value, with: { (snapshot) in
+                print(userRef)
+                if (snapshot.exists()){
+                    print(snapshot)
+                    if(snapshot.hasChild(current_data.myId!)){
+                        if let data = snapshot.childSnapshot(forPath: current_data.myId!).value as? NSDictionary{
+                            if let check = data.value(forKey: "accept_invite") as? Bool{
+                                if(check){
+                                    self.navigationController?.pushViewController(vc, animated: true)
+                                } else {
+                                    let inviteId = data.value(forKey: "invite_id")
+                                    id_invite = inviteId as! String
+                                    var ref: DatabaseReference!
+                                    ref = Database.database().reference()
+                                    ref.child("collaborations").child(current_data.myId!).child("invitations").child(id_invite).observeSingleEvent(of: .value, with: { (snapshot) in
+                                        if(snapshot.exists()){
+                                            print(id_invite)
+                                            print(current_data.myId!)
+                                            let userSnap = snapshot as! DataSnapshot
+                                            let qwerty = userSnap.value as? NSDictionary
+                                            let AcceptVC = self.storyboard?.instantiateViewController(withIdentifier: "AcceptInviteVC") as! AcceptInviteVC
+                                            let name : String!
+                                            name = "\(qwerty?.value(forKey: "sender_name")!)"
+                                            AcceptVC.inviter_name = name
+                                            AcceptVC.inviteId = id_invite
+                                            AcceptVC.projectId = current_data.myId!
+                                            self.navigationController?.pushViewController(AcceptVC, animated: true)
+                                        }
+                                    })
+                                }
+                            } else {
+                                self.navigationController?.pushViewController(vc, animated: true)
+                            }
+                        }
+                    }
+                }
+            })
+            
             
         }else if collectionView == home_file_collectionview_ref{
             if(HomeFileData[indexPath.row].uid == "tully"){
@@ -1603,7 +1642,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                 var mydata = [playData]()
                 
                 for item in HomeFileData{
-
+                    
                     let tmp_data = playData(audio_key: item.uid!, audio_url: item.audio_url!, audio_name: item.audio_name!, audio_size: item.audio_size!, downloadURL: item.downloadURL!, local_file: item.local_file!, tid: item.tid, bpm: item.bpm, key: item.key)
                     
                     mydata.append(tmp_data)
@@ -1638,7 +1677,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
             delete_master_file(myData: myData)
         }
     }
-   
+    
     func update_counter(){
         if let userId = Auth.auth().currentUser?.uid{
             let userRef = FirebaseManager.getRefference().child(userId).ref
@@ -1825,8 +1864,8 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                     self.openEngineerInfoDisplayVC()
                 }
             }
-        }.catch { (err) in
-            MyConstants.normal_display_alert(msg_title: err.localizedDescription, msg_desc: "", action_title: "Ok", myVC: self)
+            }.catch { (err) in
+                MyConstants.normal_display_alert(msg_title: err.localizedDescription, msg_desc: "", action_title: "Ok", myVC: self)
         }
         
         
@@ -1912,7 +1951,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         }
         
     }
-   
+    
     func share_recording(myid : String,type : String)
     {
         let myuserid = Auth.auth().currentUser?.uid
@@ -2063,7 +2102,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         }
     }
     
-   
+    
     func search_project(){
         if(search_text != "")
         {
@@ -2074,7 +2113,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
             userRef.child("projects").queryOrdered(byChild: "project_name").queryStarting(atValue: search_text).queryEnding(atValue: search_text+MyVariables.search_last_char).observeSingleEvent(of: .value, with: { (snapshot) in
                 
                 self.project_data.removeAll()
-            
+                
                 if snapshot.exists(){
                     for snap in snapshot.children
                     {
@@ -2092,7 +2131,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                         self.count_project_data(project_name: project_name, project_value: project_value, project_key: project_key, project_main_recording: main_recording)
                     }
                     self.project_data = self.project_data.reversed()
-                        self.search_purchase_file()
+                    self.search_purchase_file()
                 }
                 else{
                     self.search_purchase_file()
@@ -2190,7 +2229,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                     }
                     self.search_file()
                 }else{
-                   self.search_file()
+                    self.search_file()
                 }
                 
             })
@@ -2647,7 +2686,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                 let current_name = cname.removingPercentEncoding!
                 let fileSize = rec_dict?["size"] as! Int64
                 let project_data: [String: Any] = ["name": current_name, "tid": tid, "size":fileSize]
-            userRef.child("projects").child(project_key).child("recordings").child(key).setValue(project_data, withCompletionBlock: { (error, database) in
+                userRef.child("projects").child(project_key).child("recordings").child(key).setValue(project_data, withCompletionBlock: { (error, database) in
                     if let error = error
                     {
                         print(error.localizedDescription)
@@ -2655,19 +2694,19 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                     else
                     {
                         FirebaseManager.sync_project_recording_file(myfilename_tid: tid, myfilePath: mydir, projectId: project_key, rec_id: key, delete_remaining: true)
-                    
+                        
                     }
                 })
             }
             else
             {
-            userRef.child("projects").child(project_key).child("recordings").child(key).removeValue(completionBlock: { (error, database_ref) in
+                userRef.child("projects").child(project_key).child("recordings").child(key).removeValue(completionBlock: { (error, database_ref) in
                     if error != nil
                     {
                         //self.display_alert(msg_title: "Error", msg_desc: error.localizedDescription, action_title: "OK")
                     }
                 })
-            userRef.child("remaining_upload").child("projects").child(project_key).child("recordings").child(key).removeValue(completionBlock: { (error, database_ref) in
+                userRef.child("remaining_upload").child("projects").child(project_key).child("recordings").child(key).removeValue(completionBlock: { (error, database_ref) in
                     if error != nil
                     {
                         //self.display_alert(msg_title: "Error", msg_desc: error.localizedDescription, action_title: "OK")
@@ -2675,7 +2714,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                 })
             }
         }
-       
+        
     }
     
     
@@ -2694,35 +2733,35 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
             
             if(FileManager.default.fileExists(atPath: mydir.path))
             {
-               
                 
-                    let cname = rec_dict?["name"] as! String
-                    let current_name = cname.removingPercentEncoding!
-                    let fileSize = rec_dict?["size"] as! Int64
-                    let noproject_data: [String: Any] = ["name": current_name, "tid": tid, "size":fileSize]
-                    
-                   userRef.child("no_project").child("recordings").child(key).setValue(noproject_data, withCompletionBlock: { (error, database) in
-                        if let error = error
-                        {
-                            print(error.localizedDescription)
-                        }
-                        else
-                        {
-                            FirebaseManager.sync_noproject_recording_file(myfilename_tid: tid, myfilePath: mydir, rec_id: key, delete_remaining: true)
+                
+                let cname = rec_dict?["name"] as! String
+                let current_name = cname.removingPercentEncoding!
+                let fileSize = rec_dict?["size"] as! Int64
+                let noproject_data: [String: Any] = ["name": current_name, "tid": tid, "size":fileSize]
+                
+                userRef.child("no_project").child("recordings").child(key).setValue(noproject_data, withCompletionBlock: { (error, database) in
+                    if let error = error
+                    {
+                        print(error.localizedDescription)
+                    }
+                    else
+                    {
+                        FirebaseManager.sync_noproject_recording_file(myfilename_tid: tid, myfilePath: mydir, rec_id: key, delete_remaining: true)
                         
-                        }
-                    })
+                    }
+                })
             }
             else
             {
-               userRef.child("no_project").child("recordings").child(key).removeValue(completionBlock: { (error, database_ref) in
-                if error != nil
+                userRef.child("no_project").child("recordings").child(key).removeValue(completionBlock: { (error, database_ref) in
+                    if error != nil
                     {
                         //self.display_alert(msg_title: "Error", msg_desc: error.localizedDescription, action_title: "OK")
                     }
                 })
-              userRef.child("remaining_upload").child("no_project").child("recordings").child(key).removeValue(completionBlock: { (error, database_ref) in
-                if error != nil
+                userRef.child("remaining_upload").child("no_project").child("recordings").child(key).removeValue(completionBlock: { (error, database_ref) in
+                    if error != nil
                     {
                         //self.display_alert(msg_title: "Error", msg_desc: error.localizedDescription, action_title: "OK")
                     }
@@ -2762,13 +2801,13 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                         else
                         {
                             FirebaseManager.sync_copytotully_file(metadata1: metadata1, uploadAudioData: uploadAudioData as Data, current_id: key, file_name: filename, delete_remaining: true)
-                        
+                            
                         }
                     })
                 }
             }else{
-        userRef.child("remaining_upload").child("copytotully").child(key).removeValue(completionBlock: { (error, database_ref) in
-                if error != nil
+                userRef.child("remaining_upload").child("copytotully").child(key).removeValue(completionBlock: { (error, database_ref) in
+                    if error != nil
                     {
                         //self.display_alert(msg_title: "Error", msg_desc: error.localizedDescription, action_title: "OK")
                     }
@@ -2889,26 +2928,26 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
     }
     
     @IBAction func plusBtnClick(_ sender: UIButton) {
-       
-            EngineerInfoDisplayVC.checkMasterDataExists().then { (found) in
-                if(found){
-                    self.openEngineerInviteVC()
-                }else{
-                    if let display = UserDefaults.standard.value(forKey: MyConstants.tEngInfoHomePlusBtn) as? Bool{
-                        if(display){
-                            self.openEngineerInviteVC()
-                        }else{
-                            UserDefaults.standard.set(true, forKey: MyConstants.tEngInfoHomePlusBtn)
-                            self.openEngineerInfoDisplayVC()
-                        }
+        
+        EngineerInfoDisplayVC.checkMasterDataExists().then { (found) in
+            if(found){
+                self.openEngineerInviteVC()
+            }else{
+                if let display = UserDefaults.standard.value(forKey: MyConstants.tEngInfoHomePlusBtn) as? Bool{
+                    if(display){
+                        self.openEngineerInviteVC()
                     }else{
                         UserDefaults.standard.set(true, forKey: MyConstants.tEngInfoHomePlusBtn)
                         self.openEngineerInfoDisplayVC()
                     }
+                }else{
+                    UserDefaults.standard.set(true, forKey: MyConstants.tEngInfoHomePlusBtn)
+                    self.openEngineerInfoDisplayVC()
                 }
-                }.catch { (err) in
-                    MyConstants.normal_display_alert(msg_title: err.localizedDescription, msg_desc: "", action_title: "Ok", myVC: self)
             }
+            }.catch { (err) in
+                MyConstants.normal_display_alert(msg_title: err.localizedDescription, msg_desc: "", action_title: "Ok", myVC: self)
+        }
         
         
     }

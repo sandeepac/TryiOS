@@ -81,6 +81,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate ,MessagingDelegate{
         application.isIdleTimerDisabled = true
         MyVariables.pushNotification = true
         
+       
+        
         return true
     }
     
@@ -119,6 +121,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate ,MessagingDelegate{
         }else{
             FBSDKAppEvents.activateApp()
         }
+        guard
+                    let aps = userInfo[AnyHashable("aps")] as? NSDictionary,
+                    let alert = aps["alert"] as? NSDictionary,
+                    let body = alert["body"] as? String,
+                    let title = alert["title"] as? String
+                    else {
+                        // handle any error here
+                        return
+                }
+        let projectID = userInfo["project_id"]
+        print("Project ID ->",projectID)
     }
     
     

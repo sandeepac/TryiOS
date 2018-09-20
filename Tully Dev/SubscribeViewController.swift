@@ -11,20 +11,23 @@ import Firebase
 
 class SubscribeViewController: UIViewController {
     var currentlySelected = ""
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         getNotification()
     }
+    
+    
+    //MARK:- Custom Methods
+    
     func getNotification(){
         NotificationCenter.default.addObserver(self, selector: #selector(purchaseComplete(_:)), name: Notification.Name(rawValue: "purchaseComplete"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(purchaseFailed(_:)), name: Notification.Name(rawValue: "purchaseFailed"), object: nil)
     }
-    //Mark:- Custom Methods
     @objc func purchaseComplete(_ notification: Notification) {
-            savePurchasePlanInFirebase()
+        savePurchasePlanInFirebase()
     }
-
+    
     @objc func purchaseFailed(_ notification: Notification) {
         MyConstants.normal_display_alert(msg_title: "Purchase Failed", msg_desc: "", action_title: "OK", myVC: self)
     }
@@ -45,7 +48,6 @@ class SubscribeViewController: UIViewController {
                     self.present(vc, animated:true, completion:nil)
                 }
             }
-            
         } else {
             MyConstants.normal_display_alert(msg_title: "Please signIn again.", msg_desc: "", action_title: "OK", myVC: self)
         }
