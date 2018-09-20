@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AD_UNIT_ID_FOR_BANNER_TEST</key>
+	<string>ca-app-pub-3940256099942544/2934735716</string>
+	<key>AD_UNIT_ID_FOR_INTERSTITIAL_TEST</key>
+	<string>ca-app-pub-3940256099942544/4411468910</string>
+	<key>CLIENT_ID</key>
+	<string>786017457624-554o1gem1iomujsotad0qh8mq0lulff8.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.786017457624-554o1gem1iomujsotad0qh8mq0lulff8</string>
+	<key>API_KEY</key>
+	<string>AIzaSyA-bpsVX8DVVEw6Es0p9M3B3wjZ2gbkPr8</string>
+	<key>GCM_SENDER_ID</key>
+	<string>786017457624</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.tully.app</string>
+	<key>PROJECT_ID</key>
+	<string>tully-3ca3a</string>
+	<key>STORAGE_BUCKET</key>
+	<string>tully-3ca3a.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<true></true>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<false></false>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:786017457624:ios:158c8ecfc03c6ab6</string>
+	<key>DATABASE_URL</key>
+	<string>https://tully-3ca3a.firebaseio.com</string>
+</dict>
+</plist>
