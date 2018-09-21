@@ -17,6 +17,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     @IBOutlet weak var inputTextField: UITextField!
     @IBOutlet weak var containerViewBottomConstraint: NSLayoutConstraint!
     
+    @IBOutlet weak var headerDateLbl: UILabel!
     var isKeyboardAppered = false
     
     var items = [Message]()
@@ -46,15 +47,17 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     func keyboardWillHide(notification:NSNotification) {
         
-        isKeyboardAppered = false
-        
-        adjustingHeight(show:false, notification: notification)
-        
+        if isKeyboardAppered {
+            
+            isKeyboardAppered = false
+            
+            adjustingHeight(show:false, notification: notification)
+        }
     }
     
     func adjustingHeight(show:Bool, notification:NSNotification) {
         
-        var userInfo = notification.userInfo!
+        let userInfo = notification.userInfo!
         
         let keyboardFrame:CGRect = (userInfo[UIKeyboardFrameEndUserInfoKey] as! NSValue).cgRectValue
         
@@ -95,7 +98,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
             
             weakSelf?.items.sort{ $0.timestamp < $1.timestamp }
             DispatchQueue.main.async {
-                if let state = weakSelf?.items.isEmpty, state == false {
+                if let state = weakSelf?.items.isEmpty, !state {
                     weakSelf?.chatTableView.reloadData()
                     weakSelf?.chatTableView.scrollToRow(at: IndexPath.init(row: self.items.count - 1, section: 0), at: .bottom, animated: false)
                 }
@@ -142,7 +145,10 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
             self.present(documentPicker, animated: true, completion: nil)
         }
         
-        let cancelAction: UIAlertAction = UIAlertAction(title: "Cancel", style: .cancel) { action -> Void in }
+        let cancelAction: UIAlertAction = UIAlertAction(title: "Cancel", style: .cancel) { action -> Void in
+            
+            //We dont need to add any code for cancle button
+        }
         
         actionSheetController.addAction(photoAction)
         actionSheetController.addAction(documentAction)
@@ -167,6 +173,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 
                 Message.send(message: message, completion: {(_) in
                     
+                    //Have to perform UI changes
                 })
             }
         })
@@ -188,7 +195,6 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         picker.dismiss(animated: true, completion: nil)
     }
     
-    
     //MARK: TableView DataSource & Delegates
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
@@ -205,24 +211,24 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
             
             switch self.items[indexPath.row].type {
             case .text:
-                cell.message.text = self.items[indexPath.row].content as! String
+                cell.message.text = getMessageContent(indexPath: indexPath as NSIndexPath)
                 
-                cell.timestamp.text = getFormattedDate(timestamp: self.items[indexPath.row].timestamp)
+                cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
                 
-                cell.messageUser.text = self.items[indexPath.row].messageUserName
+                cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
             case .photo:
                 
-                cell.timestamp.text = getFormattedDate(timestamp: self.items[indexPath.row].timestamp)
+                cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
                 
-                cell.messageUser.text = self.items[indexPath.row].messageUserName
-                
+                cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
+
                 if let image = self.items[indexPath.row].image {
                     cell.messageBackground.image = image
                     cell.message.isHidden = true
                 } else {
                     cell.messageBackground.image = UIImage.init(named: "loading")
                     self.items[indexPath.row].downloadImage(indexpathRow: indexPath.row, completion: { (state, index) in
-                        if state == true {
+                        if state {
                             DispatchQueue.main.async {
                                 self.chatTableView.reloadData()
                             }
@@ -232,36 +238,37 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
             case .docs:
                 cell.message.text = "Document File"
                 
-                cell.timestamp.text = getFormattedDate(timestamp: self.items[indexPath.row].timestamp)
+                cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
                 
-                cell.messageUser.text = self.items[indexPath.row].messageUserName
+                cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
             }
+            
             return cell
+            
         case .sender:
             let cell = tableView.dequeueReusableCell(withIdentifier: "Sender", for: indexPath) as! SenderCell
             cell.clearCellData()
-            //            cell.profilePic.image = self.currentUser?.profilePic
+            
             switch self.items[indexPath.row].type {
             case .text:
-                cell.message.text = self.items[indexPath.row].content as! String
+                cell.message.text = getMessageContent(indexPath: indexPath as NSIndexPath)
                 
-                cell.timestamp.text = getFormattedDate(timestamp: self.items[indexPath.row].timestamp)
+                cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
                 
-                cell.messageUser.text = self.items[indexPath.row].messageUserName
-                
+                cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
             case .photo:
                 
-                cell.timestamp.text = getFormattedDate(timestamp: self.items[indexPath.row].timestamp)
+                cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
                 
-                cell.messageUser.text = self.items[indexPath.row].messageUserName
-                
+                cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
+
                 if let image = self.items[indexPath.row].image {
                     cell.messageBackground.image = image
                     cell.message.isHidden = true
                 } else {
                     cell.messageBackground.image = UIImage.init(named: "loading")
                     self.items[indexPath.row].downloadImage(indexpathRow: indexPath.row, completion: { (state, index) in
-                        if state == true {
+                        if state {
                             DispatchQueue.main.async {
                                 self.chatTableView.reloadData()
                             }
@@ -271,11 +278,11 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
             case .docs:
                 cell.message.text = "Document File"
                 
-                cell.timestamp.text = getFormattedDate(timestamp: self.items[indexPath.row].timestamp)
+                cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
                 
-                cell.messageUser.text = self.items[indexPath.row].messageUserName
-                
+                cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
             }
+            
             return cell
         }
     }
@@ -293,6 +300,75 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         self.inputTextField.resignFirstResponder()
+        
+        if !isKeyboardAppered {
+            
+            switch self.items[indexPath.row].type {
+                
+            case .photo, .docs:
+                
+                let viewController : DocumentReaderViewController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "DocumentReaderVC") as! DocumentReaderViewController
+                
+                viewController.fileURL = items[indexPath.row].content as? String
+                
+                self.present(viewController, animated: true, completion: nil)
+            case .text:
+                
+                break
+            }
+        }
+        
+    }
+    
+    func getMessageContent(indexPath : NSIndexPath) -> String {
+        
+        return (self.items[indexPath.row].content as? String)!
+    }
+    
+    func getMessageUserName(indexPath : NSIndexPath) -> String {
+        
+        return self.items[indexPath.row].messageUserName ?? ""
+    }
+    
+    func getTimestamp(indexPath : NSIndexPath) -> String {
+        
+        return getFormattedDate(timestamp: self.items[indexPath.row].timestamp)
+    }
+    
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        
+        setHeaderText()
+    }
+    
+    func setHeaderText() {
+        
+        let firstVisibleIndexPath = chatTableView.indexPathsForVisibleRows?[0]
+        
+        let timestamp = items[(firstVisibleIndexPath?.row)!].timestamp
+        
+        let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+        
+        let calendar = NSCalendar.current
+        
+        var messageDate = ""
+        
+        if calendar.isDateInYesterday(date) {
+            
+            messageDate = "Yesterday"
+        }
+        else if calendar.isDateInToday(date) {
+            
+            messageDate = "Today"
+        }
+        else {
+            
+            let dateFormatter = DateFormatter()
+            dateFormatter.locale = NSLocale.current
+            dateFormatter.dateFormat = "MMM dd YYYY" //Specify your format that you want
+            messageDate = dateFormatter.string(from: date)
+        }
+        
+        headerDateLbl.text = messageDate
     }
     
     func getFormattedDate(timestamp : Int) -> String {
@@ -301,7 +377,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         let dateFormatter = DateFormatter()
         dateFormatter.timeZone = TimeZone(abbreviation: Calendar.current.timeZone.abbreviation()!) //Set timezone that you want
         dateFormatter.locale = NSLocale.current
-        dateFormatter.dateFormat = "HH:mm a" //Specify your format that you want
+        dateFormatter.dateFormat = "h:mm a" //Specify your format that you want
         let strDate = dateFormatter.string(from: date)
         
         return strDate
@@ -309,20 +385,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
     }
-    
-    
-    /*
-     // MARK: - Navigation
-     
-     // In a storyboard-based application, you will often want to do a little preparation before navigation
-     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-     // Get the new view controller using segue.destinationViewController.
-     // Pass the selected object to the new view controller.
-     }
-     */
-    
 }
 
 extension ChatViewController: UIDocumentPickerDelegate{
