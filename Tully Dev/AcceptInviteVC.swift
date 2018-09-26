@@ -14,7 +14,7 @@ class AcceptInviteVC: UIViewController {
     var inviter_name : String!
     var projectId = String()
     var inviteId = String()
-   // var title = String()
+    var ref: DatabaseReference!
     var body = String()
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,11 +29,32 @@ class AcceptInviteVC: UIViewController {
     }
     
     @IBAction func btnAcceptClicked(_ sender: UIButton) {
-        var ref: DatabaseReference!
         ref = Database.database().reference()
+
         let inviteData : [String : Any] = ["invite_accept" : true]
         ref.child("collaborations").child(projectId).child("invitations").child(inviteId).updateChildValues(inviteData)
         print(projectId)
+        let vc : CollabrationVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "CollabrationVC") as! CollabrationVC
+        vc.currentProjectId = projectId
+        self.navigationController?.pushViewController(vc, animated: true)
         print("data updated")
     }
+    
+    @IBAction func btnDeclineClicked(_ sender: UIButton) {
+        ref = Database.database().reference()
+        let userid = Auth.auth().currentUser?.uid
+        let projectIdToDelete = ref.child(userid!).child("projects").child(projectId)
+        
+            let invitationsStorageRef = ref.child("collaborations").child(projectId).child("invitations").child(inviteId)
+        invitationsStorageRef.removeValue { error, _ in
+            //error in delete invitation
+        }
+        projectIdToDelete.removeValue { error, _ in
+            //error in deleting projectId
+        }
+        self.navigationController?.popViewController(animated: true)
+
+        }
+
+    
 }

@@ -2,7 +2,7 @@
 //  SubscribeViewController.swift
 //  Tully Dev
 //
-//  Created by Prashant  on 07/09/18.
+//  Created by Apple  on 07/09/18.
 //  Copyright © 2018 Tully. All rights reserved.
 //
 
@@ -11,7 +11,7 @@ import Firebase
 
 class SubscribeViewController: UIViewController {
     var currentlySelected = ""
-    
+    var projectId = String()
     override func viewDidLoad() {
         super.viewDidLoad()
         getNotification()
@@ -34,22 +34,20 @@ class SubscribeViewController: UIViewController {
     func savePurchasePlanInFirebase(){
         if let uid = Auth.auth().currentUser?.uid{
             let userRef = FirebaseManager.getRefference().child(uid).ref
-            let date = Date()
-            let formatter = DateFormatter()
-            formatter.dateFormat = "dd.MM.yyyy"
-            let subscriptionDate = formatter.string(from: date)
-            let currentPlanData : [String : Any] = ["isActive" : true, "fromIos" : true, "planType" : currentlySelected, "subscriptionDate" : subscriptionDate]
+            let milliseconds = Int64(Date().timeIntervalSince1970 * 1000.0)
+            let currentPlanData : [String : Any] = [ "from" : "ios", "is_subscribe" : true, "plan_type" : currentlySelected, "start_date" : milliseconds]
             userRef.child("settings").child("CollaborationSubscription").updateChildValues( currentPlanData) { (error, reference) in
                 if let error = error{
                     print(error.localizedDescription)
                     MyConstants.normal_display_alert(msg_title: "Error", msg_desc: error.localizedDescription, action_title: "OK", myVC: self)
                 } else {
                     let vc : InviteVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "InviteVC") as! InviteVC
-                    self.present(vc, animated:true, completion:nil)
+                    vc.projectCurrentId = self.projectId
+                    self.navigationController?.pushViewController(vc, animated: true)
                 }
             }
         } else {
-            MyConstants.normal_display_alert(msg_title: "Please signIn again.", msg_desc: "", action_title: "OK", myVC: self)
+            MyConstants.normal_display_alert(msg_title: Utils.shared.msgsigninAlert, msg_desc: "", action_title: "OK", myVC: self)
         }
     }
     
@@ -57,11 +55,11 @@ class SubscribeViewController: UIViewController {
     //Mark : - Actions
     
     @IBAction func close_subscribe_btn_click(_ sender: UIButton) {
-        self.dismiss(animated: true, completion: nil)
+        self.navigationController?.popViewController(animated: true)
     }
     
     @IBAction func subscribe_plan_btn_click(_ sender: UIButton) {
-        currentlySelected = "CollaboratorSubscription"
+        currentlySelected = "collaboration_subscription"
         IAPService.shared.getProducts()
         IAPService.shared.purchase(product: .inviteCollaboratorSubscription)
     }

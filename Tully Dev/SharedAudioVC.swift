@@ -533,6 +533,7 @@ class SharedAudioVC: UIViewController , AVAudioPlayerDelegate, UITableViewDelega
     {
         if(selected_recording_url == nil)
         {
+            print("audio array is = \(audioArray)")
             selected_recording_url = audioArray[selected_index].audio_url
         }
         
@@ -717,55 +718,24 @@ class SharedAudioVC: UIViewController , AVAudioPlayerDelegate, UITableViewDelega
             if (snapshot.exists()){
                 if(snapshot.hasChild("CollaborationSubscription")){
                     if let data = snapshot.childSnapshot(forPath: "CollaborationSubscription").value as? NSDictionary{
-                        if let check = data.value(forKey: "isActive") as? Bool{
+                        if let check = data.value(forKey: "is_subscribe") as? Bool{
                             if(check){
                                 let vc : InviteVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "InviteVC") as! InviteVC
-                                vc.projectCurrentId = self.projectCurrentId
-                                self.present(vc, animated:true, completion:nil)
+                            
+                                vc.projectCurrentId = self.currentProjectId
+                                self.navigationController?.pushViewController(vc, animated: true)
                             }
                         }
                     }
                 } else {
                     let vc : SubscribeViewController = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "SubscribeViewController") as! SubscribeViewController
-                    self.present(vc, animated:true, completion:nil)
+                    vc.projectId = self.currentProjectId
+                    self.navigationController?.pushViewController(vc, animated: true)
                 }
             }
         })
     }
-    func getExpiryDate(){
-        let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
-        userRef.child("settings").observeSingleEvent(of: .value, with: { (snapshot) in
-            
-            if (snapshot.exists()){
-                if(snapshot.hasChild("CollaborationSubscription")){
-                    if let data = snapshot.childSnapshot(forPath: "CollaborationSubscription").value as? NSDictionary{
-                        if let check = data.value(forKey: "subscriptionDate") as? String{
-                            let stringDate = check
-                            let dateFormatter = DateFormatter()
-                            dateFormatter.dateFormat = "dd.MM.yyyy"
-                            let subscribeDate = dateFormatter.date(from: stringDate)
-                            let expiryDate = Calendar.current.date(byAdding: .month, value: 1, to: subscribeDate!)
-                            print("purchase date = \(subscribeDate),and expiryDate = \(expiryDate) and today is\(Date())")
-                            if expiryDate! == Date() || expiryDate! < Date(){
-                                if let uid = Auth.auth().currentUser?.uid{
-                                    let userRef = FirebaseManager.getRefference().child(uid).ref
-                                    let currentPlanData : [String : Any] = ["isActive" : false, "fromIos" : true, "planType" : "", "subscriptionDate" : ""]
-                                    userRef.child("settings").child("CollaborationSubscription").updateChildValues( currentPlanData) { (error, reference) in
-                                        if let error = error{
-                                            print(error.localizedDescription)
-                                            MyConstants.normal_display_alert(msg_title: "Error", msg_desc: error.localizedDescription, action_title: "OK", myVC: self)
-                                        }
-                                    }
-                                }
-                            }
-                            
-                        }
-                    }
-                }
-            }
-        })
-        
-    }
+    
     @IBAction func play_pause_Audio(_ sender: Any)
     {
         if(initialize_audio){
@@ -1291,9 +1261,10 @@ class SharedAudioVC: UIViewController , AVAudioPlayerDelegate, UITableViewDelega
             }
         }
         
+        self.tabBarController?.tabBar.items![0].selectedImage = UIImage(named: "Home_Selected_tab")
         self.tabBarController?.tabBar.items![1].image = UIImage(named: "Play_tab")
-            self.tabBarController?.tabBar.items![0].selectedImage = UIImage(named: "Home_Selected_tab")
         self.navigationController?.popViewController(animated: true)
+        
     }
     
     @IBAction func openRecordingListView(_ sender: Any)

@@ -54,6 +54,7 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
     var current_project_download_url = ""
     var main_song_playing = false
     var come_from_push = false
+    var collaborationId = String()
     
     override func viewDidLoad(){
         super.viewDidLoad()
@@ -71,7 +72,28 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
     //MARK: - Play main recording
     
     @IBAction func play_project_main_recording(_ sender: Any){
-        main_rec()
+        let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
+        userRef.child("projects").observeSingleEvent(of: .value, with: { (snapshot) in
+            
+            if (snapshot.exists()){
+                if(snapshot.hasChild(self.current_project_id)){
+                    if let data = snapshot.childSnapshot(forPath: self.current_project_id).value as? NSDictionary{
+                        if let check = data.value(forKey: "collaboration_id") as? String{
+                            
+                            let vc : CollabrationVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "CollabrationVC") as! CollabrationVC
+                                vc.currentProjectId = self.current_project_id
+                                vc.collabrationID = self.collaborationId
+                            print("collbration id->\(self.collaborationId)")
+                            self.navigationController?.pushViewController(vc, animated: true)
+                            
+                        } else {
+                            self.main_rec()
+                        }
+                    }
+                }
+            }
+        })
+
     }
     
     func main_rec()
@@ -89,8 +111,9 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
             audio_data.append(temp_audio_data)
             
             let vc : SharedAudioVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "SharedAudioSid") as! SharedAudioVC
-            print("Lyrics Data-> ",self.lyrics_list)
+            print("Lyrics Data -> ",self.lyrics_list)
             if self.lyrics_list.isEmpty{
+                vc.currentProjectId  = self.current_project_id
                 self.navigationController?.pushViewController(vc, animated: true)
             }else{
                 let myData = self.lyrics_list[0]
@@ -268,7 +291,7 @@ class HomeProjectVC: UIViewController , UICollectionViewDelegate, UICollectionVi
                     self.record_list = self.record_list.reversed()
                     self.lyrics_list = self.lyrics_list.reversed()
                     if self.lyrics_list.isEmpty{
-                        self.collabration_btn.isHidden = false
+                        self.collabration_btn.isHidden = true
                     }else{
                         self.collabration_btn.isHidden = true
                     }

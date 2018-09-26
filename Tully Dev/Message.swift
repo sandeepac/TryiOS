@@ -16,7 +16,7 @@ class Message {
     var owner: MessageOwner
     var type: MessageType
     var content: Any
-    var timestamp: Int
+    var timestamp: Int64
     var isRead: Bool
     var image: UIImage?
     private var fromID: String?
@@ -24,7 +24,7 @@ class Message {
     
     
     //MARK: Inits
-    init(type: MessageType, content: Any, owner: MessageOwner, timestamp: Int, isRead: Bool, messageUserName: String) {
+    init(type: MessageType, content: Any, owner: MessageOwner, timestamp: Int64, isRead: Bool, messageUserName: String) {
         self.type = type
         self.content = content
         self.owner = owner
@@ -34,11 +34,13 @@ class Message {
     }
     
     //MARK: Methods
-    class func downloadAllMessages(completion: @escaping (Message) -> Swift.Void) {
+    class func downloadAllMessages(projectId: String, completion: @escaping (Message) -> Swift.Void) {
         
         if let currentUserID = Auth.auth().currentUser?.uid {
             
-            Database.database().reference().child("collaborations").child("-LMf8Qil8IvDB8xbQ4Pp").child("-LMf9HvVr2leSi4pb8nt").child("chats").observe(.value, with: { (snap) in
+            var ref: DatabaseReference!
+            ref = Database.database().reference()
+            ref.child("collaborations").child(projectId).child("chats").observe(.value, with: { (snap) in
                 
                 if snap.exists() {
                     
@@ -75,12 +77,12 @@ class Message {
                         
                         if fromID == currentUserID {
                             
-                            let message = Message.init(type: type, content: content ?? "", owner: .receiver, timestamp: timestamp ?? 0, isRead: true, messageUserName: messageUser ?? "")
+                            let message = Message.init(type: type, content: content ?? "", owner: .receiver, timestamp: Int64(timestamp ?? 0), isRead: true, messageUserName: messageUser ?? "")
                             completion(message)
                         }
                         else {
                             
-                            let message = Message.init(type: type, content: content ?? "", owner: .sender, timestamp: timestamp ?? 0, isRead: true, messageUserName: messageUser ?? "")
+                            let message = Message.init(type: type, content: content ?? "", owner: .sender, timestamp: Int64(timestamp ?? 0), isRead: true, messageUserName: messageUser ?? "")
                             completion(message)
                         }
                     }
@@ -102,7 +104,7 @@ class Message {
         }
     }
     
-    class func send(message: Message, completion: @escaping (Bool) -> Swift.Void)  {
+    class func send(projectId: String, message: Message, mimeType: String, completion: @escaping (Bool) -> Swift.Void)  {
         if let currentUserID = Auth.auth().currentUser?.uid {
             
             switch message.type {
@@ -113,19 +115,28 @@ class Message {
                 
                 let localFile = message.content as! URL
                 
-                Storage.storage().reference().child("docs").child(child).putFile(from: localFile, metadata: nil) { metadata, error in
+                Storage.storage().reference().child("docs").child(child).putFile(from: localFile, metadata: nil,completion: { metadata, error in
                     
                     if error == nil {
                         
-                        let path = metadata?.downloadURL()?.absoluteString
+                        var path = metadata?.downloadURL()?.absoluteString
+                        
+                        if mimeType == "pdf" {
+                            
+                            path = "\(path!).pdf"
+                        }
+                        else {
+                            
+                            path = "\(path!).doc"
+                        }
                         
                         let values = ["fileURL": path!, "messageText": "", "messageUserId": currentUserID, "messageTime": message.timestamp, "messageUser": name ?? ""] as [String : Any]
                         
-                        Database.database().reference().child("collaborations").child("-LMf8Qil8IvDB8xbQ4Pp").child("-LMf9HvVr2leSi4pb8nt").child("chats").childByAutoId().setValue(values, withCompletionBlock: { (error, reference) in
+                        Database.database().reference().child("collaborations").child(projectId).child("chats").childByAutoId().setValue(values, withCompletionBlock: { (error, reference) in
                             
                         })
                     }
-                }
+                })
             case .photo:
                 
                 let name = message.messageUserName
@@ -137,8 +148,7 @@ class Message {
                         
                         let path = metadata?.downloadURL()?.absoluteString
                         let values = ["fileURL": path!, "messageText": "", "messageUserId": currentUserID, "messageTime": message.timestamp, "messageUser": name ?? ""] as [String : Any]
-                        
-                        Database.database().reference().child("collaborations").child("-LMf8Qil8IvDB8xbQ4Pp").child("-LMf9HvVr2leSi4pb8nt").child("chats").childByAutoId().setValue(values, withCompletionBlock: { (error, reference) in
+                        Database.database().reference().child("collaborations").child(projectId).child("chats").childByAutoId().setValue(values, withCompletionBlock: { (error, reference) in
                             
                         })
                     }
@@ -150,11 +160,11 @@ class Message {
                 
                 let values = ["fileURL": "", "messageText": message.content, "messageUserId": currentUserID, "messageTime": message.timestamp, "messageUser": name ?? ""]
                 
-                Database.database().reference().child("collaborations").child("-LMf8Qil8IvDB8xbQ4Pp").child("-LMf9HvVr2leSi4pb8nt").child("chats").childByAutoId().setValue(values, withCompletionBlock: { (error, reference) in
+                Database.database().reference().child("collaborations").child(projectId).child("chats").childByAutoId().setValue(values, withCompletionBlock: { (error, reference) in
                     
                 })
-                
             }
         }
     }
+    
 }

@@ -9,47 +9,86 @@
 import UIKit
 import Firebase
 import MobileCoreServices
+import Alamofire
 
-class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UITextViewDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
     
     //MARK: IBOutlets & variables
     @IBOutlet weak var chatTableView: UITableView!
-    @IBOutlet weak var inputTextField: UITextField!
+    @IBOutlet weak var inputTextView: UITextView!
     @IBOutlet weak var containerViewBottomConstraint: NSLayoutConstraint!
-    
     @IBOutlet weak var headerDateLbl: UILabel!
-    var isKeyboardAppered = false
+    @IBOutlet weak var recipientTableView: UITableView!
+    
+    @IBOutlet weak var recipientTableHeightConstraint: NSLayoutConstraint!
+    var isKeyboardAppeared = false
     
     var items = [Message]()
     
+    var currentProjectId = ""
+    var currentCollaborationId = ""
+
+    var alert = UIAlertController()
+    
+    var recipientList = [[String : Any]]()
+    
+    var isRecipientListShown = false
+    
+    //MARK: Constants declaration
+    
+    let today = "Today"
+    let yesterday = "Yesterday"
+    let dateFormat = "MMM dd YYYY"
+    let dateFomatInTime = "h:mm a"
+    let storyboardName = "Main"
+    let mimeTypeImage = "png"
+    let mimeTypePDF = "pdf"
+    let mimeTypeDoc = "doc"
+    let textViewPlaceholderText = "Message"
+    let textViewPlaceholderColor = UIColor.lightGray
+    let textViewTextColor = UIColor.black
+
+    let parameter_collaboration_id = "collaboration_id"
+    let parameter_project_id = "project_id"
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
         fetchData()
         
-        inputTextField.delegate = self
+        inputTextView.delegate = self
         
+        inputTextView.text = textViewPlaceholderText
+        inputTextView.textColor = textViewPlaceholderColor
+
+        headerDateLbl.isHidden = true
+        recipientTableView.isHidden = true
+
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+        
+        LocalImages.createTullyFolder()
+        
+        getToken()
     }
     
     //MARK: Keyboard Notification methods
     func keyboardWillShow(notification:NSNotification) {
         
-        if !isKeyboardAppered {
+        if !isKeyboardAppeared {
             
             adjustingHeight(show:true, notification: notification)
             
-            isKeyboardAppered = true
+            isKeyboardAppeared = true
         }
     }
     
     func keyboardWillHide(notification:NSNotification) {
         
-        if isKeyboardAppered {
+        if isKeyboardAppeared {
             
-            isKeyboardAppered = false
+            isKeyboardAppeared = false
             
             adjustingHeight(show:false, notification: notification)
         }
@@ -75,10 +114,12 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.view.endEditing(true)
     }
     
-    //MARK: Downloads messages
+    //MARK: Downloads messages from firebase
     func fetchData() {
         
-        Message.downloadAllMessages(completion: {[weak weakSelf = self] (message) in
+        Message.downloadAllMessages(projectId: currentProjectId, completion: {[weak weakSelf = self] (message) in
+            
+            self.alert.dismiss(animated: true, completion: nil)
             
             let recievedMessageText = message.content as! String
             let recievedTimestamp = message.timestamp
@@ -114,18 +155,24 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     @IBAction func sendMessage(_ sender: Any) {
         
-        if let text = self.inputTextField.text {
+        if inputTextView.textColor != textViewPlaceholderColor && !inputTextView.text.isEmpty {
             
-            if !text.isEmpty {
-                self.composeMessage(type: .text, content: self.inputTextField.text!)
-                self.inputTextField.text = ""
-            }
+            self.composeMessage(type: .text, content: self.inputTextView.text!, mimeType: "")
+            self.inputTextView.text = ""
+        }
+        else {
+            
+            self.inputTextView.resignFirstResponder()
+            
+            let alert = UIAlertController(title: "Alert", message: "Please enter some text!", preferredStyle: UIAlertControllerStyle.alert)
+            alert.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler: nil))
+            self.present(alert, animated: true, completion: nil)
         }
     }
     
     @IBAction func showOptions(_ sender: Any) {
         
-        inputTextField.resignFirstResponder()
+        inputTextView.resignFirstResponder()
         
         let actionSheetController: UIAlertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         
@@ -147,7 +194,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         let cancelAction: UIAlertAction = UIAlertAction(title: "Cancel", style: .cancel) { action -> Void in
             
-            //We dont need to add any code for cancle button
+            //We dont need to add any code for Cancel button
         }
         
         actionSheetController.addAction(photoAction)
@@ -157,7 +204,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         present(actionSheetController, animated: true, completion: nil)
     }
     
-    func composeMessage(type: MessageType, content: Any)  {
+    func composeMessage(type: MessageType, content: Any, mimeType: String)  {
         
         let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
         
@@ -169,9 +216,11 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 
                 let name = data?.value(forKey: "artist_name") as? String
                 
-                let message = Message.init(type: type, content: content, owner: .sender, timestamp: Int(Date().timeIntervalSince1970), isRead: false, messageUserName: name!)
+                let milliseconds = Int64(Date().timeIntervalSince1970 * 1000.0)
                 
-                Message.send(message: message, completion: {(_) in
+                let message = Message.init(type: type, content: content, owner: .sender, timestamp: milliseconds, isRead: false, messageUserName: name!)
+                
+                Message.send(projectId: self.currentProjectId, message: message, mimeType: mimeType, completion: {(_) in
                     
                     //Have to perform UI changes
                 })
@@ -184,106 +233,184 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         if let pickedImage = info[UIImagePickerControllerEditedImage] as? UIImage {
             
-            self.composeMessage(type: .photo, content: pickedImage)
+            self.composeMessage(type: .photo, content: pickedImage, mimeType: "image")
         }
         else {
             
             let pickedImage = info[UIImagePickerControllerOriginalImage] as! UIImage
-            self.composeMessage(type: .photo, content: pickedImage)
+            self.composeMessage(type: .photo, content: pickedImage, mimeType: "image")
         }
         
         picker.dismiss(animated: true, completion: nil)
+        
+        alert = UIAlertController(title: "", message: "Sending Image", preferredStyle: UIAlertControllerStyle.alert)
+        self.present(alert, animated: true, completion: nil)
+        
     }
     
     //MARK: TableView DataSource & Delegates
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
-        return self.items.count
+        if isRecipientListShown {
+            
+            return recipientList.count
+        }
+        else {
+            
+            return self.items.count
+        }
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        switch self.items[indexPath.row].owner {
+        if isRecipientListShown {
             
-        case .receiver:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "Receiver", for: indexPath) as! ReceiverCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "chatRecipientCell", for: indexPath) as! ChatRecipientCell
+            
             cell.clearCellData()
-            
-            switch self.items[indexPath.row].type {
-            case .text:
-                cell.message.text = getMessageContent(indexPath: indexPath as NSIndexPath)
+                        
+            if let dict = recipientList[indexPath.row] as? [String : Any] {
                 
-                cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
+                cell.recipientName.text = dict["user_name"] as? String
                 
-                cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
-            case .photo:
-                
-                cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
-                
-                cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
-
-                if let image = self.items[indexPath.row].image {
-                    cell.messageBackground.image = image
-                    cell.message.isHidden = true
-                } else {
-                    cell.messageBackground.image = UIImage.init(named: "loading")
-                    self.items[indexPath.row].downloadImage(indexpathRow: indexPath.row, completion: { (state, index) in
-                        if state {
-                            DispatchQueue.main.async {
-                                self.chatTableView.reloadData()
-                            }
-                        }
-                    })
-                }
-            case .docs:
-                cell.message.text = "Document File"
-                
-                cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
-                
-                cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
+                cell.profilePic.image = #imageLiteral(resourceName: "Image1")
             }
-            
             return cell
+        }
+        else {
             
-        case .sender:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "Sender", for: indexPath) as! SenderCell
-            cell.clearCellData()
-            
-            switch self.items[indexPath.row].type {
-            case .text:
-                cell.message.text = getMessageContent(indexPath: indexPath as NSIndexPath)
+            switch self.items[indexPath.row].owner {
+                
+            case .receiver:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "Receiver", for: indexPath) as! ReceiverCell
+                cell.clearCellData()
                 
                 cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
                 
                 cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
-            case .photo:
                 
-                cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
-                
-                cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
-
-                if let image = self.items[indexPath.row].image {
-                    cell.messageBackground.image = image
-                    cell.message.isHidden = true
-                } else {
-                    cell.messageBackground.image = UIImage.init(named: "loading")
-                    self.items[indexPath.row].downloadImage(indexpathRow: indexPath.row, completion: { (state, index) in
-                        if state {
-                            DispatchQueue.main.async {
-                                self.chatTableView.reloadData()
+                switch self.items[indexPath.row].type {
+                case .text:
+                    cell.message.text = getMessageContent(indexPath: indexPath as NSIndexPath)
+                    
+                    cell.docImageView.isHidden = true
+                    cell.docName.isHidden = true
+                    cell.message.isHidden = false
+                    cell.messageBackground.isHidden = true
+                case .photo:
+                    
+                    if let image = self.items[indexPath.row].image {
+                        cell.messageBackground.image = image
+                    } else {
+                        cell.messageBackground.image = UIImage.init(named: "loading")
+                        self.items[indexPath.row].downloadImage(indexpathRow: indexPath.row, completion: { (state, index) in
+                            if state {
+                                DispatchQueue.main.async {
+                                    self.chatTableView.reloadData()
+                                }
                             }
-                        }
-                    })
+                        })
+                    }
+                    
+                    cell.docImageView.isHidden = true
+                    cell.docName.isHidden = true
+                    cell.message.isHidden = true
+                    cell.messageBackground.isHidden = false
+                case .docs:
+                    
+                    cell.docName.text = "Document File"
+                    
+                    cell.docImageView.isHidden = false
+                    cell.docName.isHidden = false
+                    cell.message.isHidden = true
+                    cell.messageBackground.isHidden = true
                 }
-            case .docs:
-                cell.message.text = "Document File"
+                return cell
+            case .sender:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "Sender", for: indexPath) as! SenderCell
+                cell.clearCellData()
                 
                 cell.timestamp.text = getTimestamp(indexPath: indexPath as NSIndexPath)
                 
                 cell.messageUser.text = getMessageUserName(indexPath: indexPath as NSIndexPath)
+                
+                switch self.items[indexPath.row].type {
+                case .text:
+                    cell.message.text = getMessageContent(indexPath: indexPath as NSIndexPath)
+                    
+                    cell.docImageView.isHidden = true
+                    cell.docName.isHidden = true
+                    cell.message.isHidden = false
+                    cell.messageBackground.isHidden = true
+                case .photo:
+                    
+                    let isFileExist = LocalImages.checkIsFileExist(timestamp: self.items[indexPath.row].timestamp, mimeType: mimeTypeImage)
+                    
+                    if isFileExist {
+                        
+                        cell.messageBackground.alpha = 1.0
+                        cell.docImageView.isHidden = true
+                        cell.docName.isHidden = true
+                    }
+                    else {
+                        
+                        cell.messageBackground.alpha = 0.7
+                        cell.docImageView.image = #imageLiteral(resourceName: "file_download")
+                        cell.docName.text = "Download"
+                        cell.docImageView.isHidden = false
+                        cell.docName.isHidden = false
+                    }
+                    
+                    if let image = self.items[indexPath.row].image {
+                        cell.messageBackground.image = image
+                    } else {
+                        cell.messageBackground.image = UIImage.init(named: "loading")
+                        self.items[indexPath.row].downloadImage(indexpathRow: indexPath.row, completion: { (state, index) in
+                            if state {
+                                DispatchQueue.main.async {
+                                    self.chatTableView.reloadData()
+                                }
+                            }
+                        })
+                    }
+                    
+                    cell.message.isHidden = true
+                    cell.messageBackground.isHidden = false
+                case .docs:
+                    
+                    var mimeType = ""
+                    
+                    let contentString = items[indexPath.row].content as! String
+                    
+                    if contentString.contains(".\(mimeTypePDF)") {
+                        
+                        mimeType = mimeTypePDF
+                    }
+                    else {
+                        
+                        mimeType = mimeTypeDoc
+                    }
+                    
+                    let isFileExist = LocalImages.checkIsFileExist(timestamp: self.items[indexPath.row].timestamp, mimeType: mimeType)
+                    
+                    if isFileExist {
+                        
+                        cell.docImageView.image = #imageLiteral(resourceName: "add_doc_icon")
+                    }
+                    else {
+                        
+                        cell.docImageView.image = #imageLiteral(resourceName: "file_download")
+                    }
+                    
+                    cell.docName.text = "Document File"
+                    
+                    cell.docImageView.isHidden = false
+                    cell.docName.isHidden = false
+                    cell.message.isHidden = true
+                    cell.messageBackground.isHidden = true
+                }
+                return cell
             }
-            
-            return cell
         }
     }
     
@@ -299,54 +426,120 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        self.inputTextField.resignFirstResponder()
-        
-        if !isKeyboardAppered {
+        if isRecipientListShown {
+
             
-            switch self.items[indexPath.row].type {
+        }
+        else {
+            
+            self.inputTextView.resignFirstResponder()
+            
+            if !isKeyboardAppeared {
                 
-            case .photo, .docs:
-                
-                let viewController : DocumentReaderViewController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "DocumentReaderVC") as! DocumentReaderViewController
-                
-                viewController.fileURL = items[indexPath.row].content as? String
-                
-                self.present(viewController, animated: true, completion: nil)
-            case .text:
-                
-                break
+                if self.items[indexPath.row].type == .photo {
+                    
+                    let isFileExist = LocalImages.checkIsFileExist(timestamp: self.items[indexPath.row].timestamp, mimeType: mimeTypeImage)
+                    
+                    if isFileExist {
+                        
+                        redirectView(indexPath: indexPath, mimeType: mimeTypeImage)
+                    }
+                    else {
+                        
+                        LocalImages.saveImage(url: URL(string: items[indexPath.row].content as! String)!, timestamp: items[indexPath.row].timestamp)
+                        
+                        chatTableView.reloadRows(at: [indexPath], with: .automatic)
+                    }
+                }
+                else if self.items[indexPath.row].type == .docs {
+                    
+                    var mimeType = ""
+                    
+                    var contentString = items[indexPath.row].content as! String
+                    
+                    if contentString.contains(".\(mimeTypePDF)") {
+                        
+                        mimeType = mimeTypePDF
+                        contentString = contentString.replacingOccurrences(of: ".\(mimeTypePDF)", with: "")
+                    }
+                    else {
+                        
+                        mimeType = mimeTypeDoc
+                        contentString = contentString.replacingOccurrences(of: ".\(mimeTypeDoc)", with: "")
+                    }
+                    
+                    let isFileExist = LocalImages.checkIsFileExist(timestamp: self.items[indexPath.row].timestamp, mimeType: mimeType)
+                    
+                    if isFileExist {
+                        
+                        redirectView(indexPath: indexPath, mimeType: mimeType)
+                    }
+                    else {
+                        
+                        alert = UIAlertController(title: "", message: "Saving Document", preferredStyle: UIAlertControllerStyle.alert)
+                        self.present(alert, animated: true, completion: nil)
+                        
+                        LocalImages.saveDocuments(url: URL(string: contentString)!, timestamp: items[indexPath.row].timestamp, mimeType: mimeType, completion: { (isSaved) in
+                            
+                            self.alert.dismiss(animated: true, completion: nil)
+                        })
+                        
+                        chatTableView.reloadRows(at: [indexPath], with: .automatic)
+                    }
+                }
             }
         }
-        
     }
     
+    //MARK: getMessageContent method
     func getMessageContent(indexPath : NSIndexPath) -> String {
         
         return (self.items[indexPath.row].content as? String)!
     }
     
+    //MARK: getMessageUserName method
     func getMessageUserName(indexPath : NSIndexPath) -> String {
         
         return self.items[indexPath.row].messageUserName ?? ""
     }
     
+    //MARK: getTimestamp method
     func getTimestamp(indexPath : NSIndexPath) -> String {
         
         return getFormattedDate(timestamp: self.items[indexPath.row].timestamp)
     }
     
-    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+    //MARK: redirectView method
+    func redirectView(indexPath: IndexPath, mimeType: String) {
         
-        setHeaderText()
+        let viewController : DocumentReaderViewController = UIStoryboard(name: storyboardName, bundle: nil).instantiateViewController(withIdentifier: "DocumentReaderVC") as! DocumentReaderViewController
+        
+        viewController.fileURL = LocalImages.getFilePath(timestamp: items[indexPath.row].timestamp, mimeType: mimeType)
+        
+        viewController.type = mimeType
+        
+        self.present(viewController, animated: true, completion: nil)
     }
     
+    //MARK: scrollViewDidEndDragging method
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        
+        if !items.isEmpty {
+            
+            setHeaderText()
+        }
+    }
+    
+    //MARK: setHeaderText method
     func setHeaderText() {
         
         let firstVisibleIndexPath = chatTableView.indexPathsForVisibleRows?[0]
         
         let timestamp = items[(firstVisibleIndexPath?.row)!].timestamp
         
-        let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+        let timeInSeconds = Double(timestamp) / 1000
+        
+        let date = Date(timeIntervalSince1970: TimeInterval(timeInSeconds))
         
         let calendar = NSCalendar.current
         
@@ -354,33 +547,122 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         if calendar.isDateInYesterday(date) {
             
-            messageDate = "Yesterday"
+            messageDate = yesterday
         }
         else if calendar.isDateInToday(date) {
             
-            messageDate = "Today"
+            messageDate = today
         }
         else {
             
             let dateFormatter = DateFormatter()
             dateFormatter.locale = NSLocale.current
-            dateFormatter.dateFormat = "MMM dd YYYY" //Specify your format that you want
+            dateFormatter.dateFormat = dateFormat //Specify your format that you want
             messageDate = dateFormatter.string(from: date)
         }
+        
+        headerDateLbl.isHidden = false
         
         headerDateLbl.text = messageDate
     }
     
-    func getFormattedDate(timestamp : Int) -> String {
+    //MARK: getFormattedDate method
+    func getFormattedDate(timestamp : Int64) -> String {
         
-        let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+        let timeInSeconds = Double(timestamp) / 1000
+        
+        let date = Date(timeIntervalSince1970: TimeInterval(timeInSeconds))
         let dateFormatter = DateFormatter()
         dateFormatter.timeZone = TimeZone(abbreviation: Calendar.current.timeZone.abbreviation()!) //Set timezone that you want
         dateFormatter.locale = NSLocale.current
-        dateFormatter.dateFormat = "h:mm a" //Specify your format that you want
+        dateFormatter.dateFormat = dateFomatInTime //Specify your format that you want
         let strDate = dateFormatter.string(from: date)
         
         return strDate
+    }
+    
+    //MARK: TextViewDelegate method
+    func textViewDidBeginEditing(_ textView: UITextView) {
+        if textView.textColor == textViewPlaceholderColor {
+            textView.text = nil
+            textView.textColor = textViewTextColor
+        }
+    }
+    
+    func textViewDidEndEditing(_ textView: UITextView) {
+        if textView.text.isEmpty {
+            textView.text = textViewPlaceholderText
+            textView.textColor = textViewPlaceholderColor
+        }
+    }
+    
+    func textViewDidChange(_ textView: UITextView) {
+        
+        let lastCharacter = textView.text.last
+        
+        if lastCharacter == "@" {
+            
+            print(lastCharacter!)
+            
+            isRecipientListShown = true
+            recipientTableView.isHidden = false
+            recipientTableView.reloadData()
+            print(recipientList)
+        }
+        else {
+            
+            isRecipientListShown = false
+            recipientTableView.isHidden = true
+            print(textView.text)
+        }
+        
+    }
+
+    //MARK: getToken method
+    func getToken() {
+        
+        // Check Internet connection
+        if(Reachability.isConnectedToNetwork()){
+            if (Auth.auth().currentUser?.uid) != nil {
+                ApiAuthentication.get_authentication_token().then({ (token) in
+                    
+                    self.getRecipientsList(token: token)
+                }).catch({ (err) in
+                    MyConstants.normal_display_alert(msg_title: "Error", msg_desc: err.localizedDescription, action_title: "Ok", myVC: self)
+                })
+            }
+        } else {
+            
+            MyConstants.normal_display_alert(msg_title: "Error", msg_desc: "No internet connection.", action_title: "Ok", myVC: self)
+        }
+    }
+    
+    //MARK: getRecipientsList method
+    func getRecipientsList(token : String) {
+        
+        let url = MyConstants.collabrationURL
+        
+        let parameters = [
+            parameter_collaboration_id: "-LNKdZHCW4wPx2-CnxCZ",
+            parameter_project_id: currentProjectId
+        ]
+        
+        let headers = [
+            MyConstants.Authorization: token
+        ]
+        
+        Alamofire.request(url, method: .post, parameters: parameters, encoding: URLEncoding.default, headers: headers).responseJSON { response in
+            switch response.result {
+            case .success:
+                
+                if let json = response.result.value as? [String : Any] {
+                    print(json)
+                    self.recipientList = json["users"] as! [[String : Any]]
+                }
+            case .failure(let error):
+                print(error)
+            }
+        }
     }
     
     override func didReceiveMemoryWarning() {
@@ -388,11 +670,13 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     }
 }
 
-extension ChatViewController: UIDocumentPickerDelegate{
+extension ChatViewController: UIDocumentPickerDelegate {
     
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentAt url: URL) {
         
-        self.composeMessage(type: .docs, content: url)
+        alert = UIAlertController(title: "", message: "Sending Document", preferredStyle: UIAlertControllerStyle.alert)
+        self.present(alert, animated: true, completion: nil)
         
+        self.composeMessage(type: .docs, content: url, mimeType: url.pathExtension)
     }
 }
