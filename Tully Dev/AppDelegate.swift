@@ -14,9 +14,10 @@ import Crashlytics
 import Mixpanel
 import Intercom
 import FirebaseMessaging
+import UserNotifications
 
 //@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate ,MessagingDelegate{
+class AppDelegate: UIResponder, UIApplicationDelegate ,MessagingDelegate,UNUserNotificationCenterDelegate{
     
     func messaging(_ messaging: Messaging, didRefreshRegistrationToken fcmToken: String) {
         let token = Messaging.messaging().fcmToken
@@ -57,7 +58,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate ,MessagingDelegate{
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        
        // Intercom.setApiKey("dG9rOmY1NTEzZjk0Xzg3NWFfNGNmM184ZGM0X2Q0ZjQ0MzM5ZDM1ZjoxOjA", forAppId:"ne8l5lbm")
         FirebaseApp.configure()
         Intercom.setApiKey("ios_sdk-0c4abb168f0b10fc71407ea6e31c65eae5e10358", forAppId: "ne8l5lbm")
@@ -71,7 +71,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate ,MessagingDelegate{
         Fabric.with([Crashlytics.self])
         
         Messaging.messaging().delegate = self
-
+        UNUserNotificationCenter.current().delegate = self
         //let context = avformat_alloc_context()
        
         let notificationTypes : UIUserNotificationType = [UIUserNotificationType.alert, UIUserNotificationType.badge, UIUserNotificationType.sound]
@@ -114,8 +114,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate ,MessagingDelegate{
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any])
     {
-        print(userInfo)
-        
+    
         if (Intercom.isIntercomPushNotification(userInfo)) {
             Intercom.handlePushNotification(userInfo)
         }else{
@@ -131,10 +130,40 @@ class AppDelegate: UIResponder, UIApplicationDelegate ,MessagingDelegate{
                         return
                 }
         let projectID = userInfo["project_id"]
-        print("Project ID ->",projectID)
+        let senderName = userInfo["sender_name"]
+        let inviteID = userInfo["invite_id"]
+        
+    
+        
+        let homeVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "HomeVCSid") as! HomeVC
+        let acceptVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "AcceptInviteVC") as! AcceptInviteVC
+        acceptVC.projectId = projectID as! String
+        acceptVC.inviter_name = senderName as! String
+        acceptVC.inviteId = inviteID as! String
+        let viewArray = [homeVC,acceptVC]
+        addSubViewControllerDirectly(viewArray)
+        
     }
-    
-    
+    func addSubViewControllerDirectly(_ viewControllerArray: [Any]?) {
+        
+        window?.removeFromSuperview()
+        
+        let nav = UINavigationController()
+        nav.isNavigationBarHidden = true
+        nav.navigationBar.isTranslucent = false
+        if let anArray = viewControllerArray as? [UIViewController] {
+            nav.viewControllers = anArray
+        }
+        
+        window?.rootViewController = nav
+        
+        window?.makeKeyAndVisible()
+    }
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void)
+    {
+        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "nameOfNotification"), object: nil)
+        completionHandler([.alert, .badge, .sound])
+    }
     
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Messaging.messaging().apnsToken = deviceToken

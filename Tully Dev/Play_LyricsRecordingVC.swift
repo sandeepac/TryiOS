@@ -125,6 +125,7 @@ class Play_LyricsRecordingVC: UIViewController, UITextViewDelegate, selectedData
     {
         super.viewDidLoad()
         //if collabration = ""
+        
         manager = CBCentralManager(delegate: self, queue: nil, options: nil)
         manager.delegate = self
         let screenWidth = UIScreen.main.bounds.width
@@ -165,6 +166,7 @@ class Play_LyricsRecordingVC: UIViewController, UITextViewDelegate, selectedData
         NotificationCenter.default.addObserver(self, selector: #selector(Play_LyricsRecordingVC.updateTextView(notification:)), name: Notification.Name.UIKeyboardWillChangeFrame, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(Play_LyricsRecordingVC.updateTextView(notification:)), name: Notification.Name.UIKeyboardWillHide, object: nil)
         check_record_permission()
+       
     }
     
     override func viewWillAppear(_ animated: Bool) {

@@ -118,6 +118,13 @@ class SharedAudioVC: UIViewController , AVAudioPlayerDelegate, UITableViewDelega
             btnInviteOutlet.isHidden = false
             imgInviteOutlet.isHidden = false
         }
+        
+        if !currentProjectId.isEmpty {
+            
+            btnInviteOutlet.isHidden = false
+            imgInviteOutlet.isHidden = false
+        }
+        
         btn_analyzer_detect_ref.layer.cornerRadius = 10.0
         btn_analyzer_detect_ref.clipsToBounds = true
         
@@ -716,8 +723,8 @@ class SharedAudioVC: UIViewController , AVAudioPlayerDelegate, UITableViewDelega
         userRef.child("settings").observeSingleEvent(of: .value, with: { (snapshot) in
 
             if (snapshot.exists()){
-                if(snapshot.hasChild("CollaborationSubscription")){
-                    if let data = snapshot.childSnapshot(forPath: "CollaborationSubscription").value as? NSDictionary{
+                if(snapshot.hasChild("collaboration_subscription")){
+                    if let data = snapshot.childSnapshot(forPath: "collaboration_subscription").value as? NSDictionary{
                         if let check = data.value(forKey: "is_subscribe") as? Bool{
                             if(check){
                                 let vc : InviteVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "InviteVC") as! InviteVC

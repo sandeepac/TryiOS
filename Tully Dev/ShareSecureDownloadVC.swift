@@ -97,13 +97,13 @@ class ShareSecureDownloadVC: UIViewController {
     @IBAction func share(_ sender: UIButton) {
         
         if(expire == 1){
-            MyConstants.normal_display_alert(msg_title: "Select expire time", msg_desc: "", action_title: "OK", myVC: self)
+            MyConstants.normal_display_alert(msg_title: Utils.shared.msgExpiretime, msg_desc: "", action_title: "OK", myVC: self)
         }else{
             ApiAuthentication.get_authentication_token().then({ (token) in
                 self.shareSecureResponseProtocol?.shareSecureResponse(allowDownload: self.download, postStringData: self.shareString, urlString: self.urlString, isCancel: false, token: token, type: self.master_type, expireTime : self.expire)
                 self.dismiss(animated: true, completion: nil)
             }).catch({ (err) in
-                MyConstants.normal_display_alert(msg_title: "Error", msg_desc: err.localizedDescription, action_title: "Ok", myVC: self)
+                MyConstants.normal_display_alert(msg_title: Utils.shared.msgError, msg_desc: err.localizedDescription, action_title: "Ok", myVC: self)
             })
         }
         

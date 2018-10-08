@@ -39,7 +39,10 @@ class MyConstants : NSObject
     static var api_security_code = "api_code"
     static var api_security_time = "api_time"
     static var Authorization = "Token"
-    
+    static let InvitationUser = "http://34.227.113.99/tully_qa/mobile/api/collaboration/check_email_exist"
+    static let collabrationURL = "http://34.227.113.99/tully_qa/mobile/api/collaboration/get_collaboration_by_id"
+    static let checkmailField = "Enter Email"
+
     // For Engineer InfoDisplay
     
     static var tEngInfoAll = "tEngineerInfoDisplayAll"
@@ -145,3 +148,4 @@ class MyConstants : NSObject
     }
     
 }
+

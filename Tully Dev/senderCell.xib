@@ -19,17 +19,17 @@
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1X9-Z3-3XP">
-                        <rect key="frame" x="0.0" y="0.0" width="320" height="43.5"/>
-                        <fontDescription key="fontDescription" name="Avenir-Heavy" family="Avenir" pointSize="16"/>
+                        <rect key="frame" x="5" y="0.0" width="315" height="38.5"/>
+                        <fontDescription key="fontDescription" name="Avenir-Medium" family="Avenir" pointSize="16"/>
                         <nil key="textColor"/>
                         <nil key="highlightedColor"/>
                     </label>
                 </subviews>
                 <constraints>
-                    <constraint firstAttribute="bottom" secondItem="1X9-Z3-3XP" secondAttribute="bottom" id="BGJ-ru-xQI"/>
+                    <constraint firstAttribute="bottom" secondItem="1X9-Z3-3XP" secondAttribute="bottom" constant="5" id="BGJ-ru-xQI"/>
                     <constraint firstAttribute="trailing" secondItem="1X9-Z3-3XP" secondAttribute="trailing" id="IQl-Pk-u6n"/>
                     <constraint firstItem="1X9-Z3-3XP" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="top" id="b0X-TF-usE"/>
-                    <constraint firstItem="1X9-Z3-3XP" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" id="cdp-IZ-LrK"/>
+                    <constraint firstItem="1X9-Z3-3XP" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" constant="5" id="cdp-IZ-LrK"/>
                 </constraints>
             </tableViewCellContentView>
             <viewLayoutGuide key="safeArea" id="njF-e1-oar"/>

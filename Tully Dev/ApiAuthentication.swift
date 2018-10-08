@@ -13,6 +13,7 @@ import Promise
 class ApiAuthentication : NSObject
 {
     
+    
     class func get_authentication_token() -> Promise<String> {
         return Promise<String> { (fulfill, reject) in
             

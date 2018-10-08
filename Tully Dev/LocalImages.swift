@@ -17,7 +17,7 @@ class LocalImages {
     static let imageFolderPath = "tully/images/Tully_File_"
     static let documentFolderPath = "tully/documents/Tully_File_"
     static let mimeTypeImage = "png"
-
+    
     class func createTullyFolder() {
         
         
@@ -40,43 +40,49 @@ class LocalImages {
     
     class func saveImage(url: URL, timestamp: Int64) {
         
-        let data = try? Data(contentsOf: url)
-        
-        if let imageData = data {
+        DispatchQueue.global(qos: .background).async {
             
-            let image = UIImage(data: imageData)
+            let data = try? Data(contentsOf: url)
             
-            do {
+            if let imageData = data {
                 
-                let formattedDate = getFormattedDate(timestamp: timestamp)
+                let image = UIImage(data: imageData)
                 
-                let fileURL = documentsURL.appendingPathComponent("\(imageFolderPath)\(formattedDate).png")
-                
-                if let pngImageData = UIImagePNGRepresentation(image!) {
+                do {
                     
-                    if !fileManager.fileExists(atPath: fileURL.path) {
+                    let formattedDate = getFormattedDate(timestamp: timestamp)
+                    
+                    let fileURL = documentsURL.appendingPathComponent("\(imageFolderPath)\(formattedDate).png")
+                    
+                    if let pngImageData = UIImagePNGRepresentation(image!) {
                         
-                        try pngImageData.write(to: fileURL, options: .atomic)
+                        if !fileManager.fileExists(atPath: fileURL.path) {
+                            
+                            try pngImageData.write(to: fileURL, options: .atomic)
+                        }
                     }
-                }
-            } catch { }
+                } catch { }
+            }
         }
     }
     
     class func saveDocuments(url: URL, timestamp: Int64, mimeType: String, completion: @escaping (Bool) -> Swift.Void) {
         
-        let formattedDate = getFormattedDate(timestamp: timestamp)
-        
-        let fileURL = documentsURL.appendingPathComponent("\(documentFolderPath)\(formattedDate).\(mimeType)")
-        
-        let datapdf = try? Data(contentsOf: url)
-        
-        if let aDatapdf = datapdf {
+        DispatchQueue.global(qos: .background).async {
             
-            if !fileManager.fileExists(atPath: fileURL.path) {
+            let formattedDate = getFormattedDate(timestamp: timestamp)
+            
+            let fileURL = documentsURL.appendingPathComponent("\(documentFolderPath)\(formattedDate).\(mimeType)")
+            
+            let datapdf = try? Data(contentsOf: url)
+            
+            if let aDatapdf = datapdf {
                 
-                try? aDatapdf.write(to: fileURL, options: .atomic)
-                completion(true)
+                if !fileManager.fileExists(atPath: fileURL.path) {
+                    
+                    try? aDatapdf.write(to: fileURL, options: .atomic)
+                    completion(true)
+                }
             }
         }
     }

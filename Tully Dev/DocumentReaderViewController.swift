@@ -21,7 +21,7 @@ class DocumentReaderViewController: UIViewController, UIWebViewDelegate {
     var type = ""
     
     let mimeTypeImage = "png"
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -44,7 +44,7 @@ class DocumentReaderViewController: UIViewController, UIWebViewDelegate {
     //MARK: Button Action methods
     @IBAction func backBtnPressed(_ sender: Any) {
         
-        dismiss(animated: true, completion: nil)
+        self.navigationController?.popViewController(animated: true)
     }
     
     //MARK: UIWebViewDelegate methods

@@ -21,6 +21,7 @@ class SenderCell: UITableViewCell {
     @IBOutlet weak var docImageView: UIImageView!
     @IBOutlet weak var docName: UILabel!
     @IBOutlet weak var outerView: UIView!
+    @IBOutlet weak var downloadImage: UIImageView!
     
     func clearCellData()  {
         self.message.text = nil
@@ -34,7 +35,7 @@ class SenderCell: UITableViewCell {
         self.message.textContainerInset = UIEdgeInsetsMake(5, 5, 5, 5)
         self.messageBackground.layer.cornerRadius = 5
         self.messageBackground.clipsToBounds = true
-        self.profilePic.layer.cornerRadius = 10
+        self.profilePic.layer.cornerRadius = 15
         self.profilePic.clipsToBounds = true
         self.outerView.layer.cornerRadius = 5
         self.outerView.clipsToBounds = true

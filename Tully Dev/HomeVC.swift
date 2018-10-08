@@ -201,6 +201,11 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         upload_remaining()
         share_remaining()
         btn_all_click()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.pushNofificationUpdate), name: NSNotification.Name(rawValue: "nameOfNotification"), object: nil)
+    }
+    func pushNofificationUpdate(notif: NSNotification) {
+        btn_all_click()
     }
     
     @objc func reloadData(_ notification: Notification) {
@@ -209,7 +214,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
     
     override func viewDidAppear(_ animated: Bool)
     {
-        //if(MyVariables.home_tutorial){
+        //if(MyVariables.home_tutorial){Invi
         let myrect = CGRect(x: 0, y: 0, width: scrollview_ref.frame.width, height: scrollview_ref.frame.height)
         scrollview_ref.scrollRectToVisible(myrect, animated: true)
         
@@ -675,11 +680,13 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                 
                 userRef.child("projects").queryOrderedByKey().observeSingleEvent(of: .value, with: { (snapshot) in
                     self.project_data.removeAll()
+                    
                     for snap in snapshot.children
                     {
                         let userSnap = snap as! DataSnapshot
                         let project_key = userSnap.key
                         let project_value = userSnap.value as! NSDictionary
+                        
                         var main_recording = ""
                         var project_name = ""
                         if let pname = project_value.value(forKey: "project_name") as? String{
@@ -712,6 +719,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         var total_recordings = 0
         var total_lyrics = 0
         var downloadURL = ""
+        var audioName = String()
         if((project_value.value(forKey: "recordings") as? NSDictionary) != nil)
         {
             let record_data =  project_value.value(forKey: "recordings") as! NSDictionary
@@ -721,6 +729,11 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                 let rec_dict = record_data.value(forKey: key) as? NSDictionary
                 if (rec_dict?.value(forKey: "name") as? String) != nil
                 {
+                    if  let NameSong = rec_dict?.value(forKey: "name") as? String
+                    {
+                        audioName = NameSong
+                    }
+                    
                     total_recordings = total_recordings + 1
                     if(rec_dict?.value(forKey: "tid") as? String == project_main_recording){
                         if let myurl = rec_dict?.value(forKey: "downloadURL") as? String{
@@ -749,7 +762,11 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         
         let all_total = total_recordings + total_lyrics
         let sdesc = String(all_total) + " items"
-        let mydata = HomeData(type: "project", myId: project_key, nm: project_name, my_img: "home_project.png", sdesc: sdesc, local_file: true, download_url: downloadURL)
+        if downloadURL == ""{
+            
+        
+        }
+        let mydata = HomeData(type: "project", myId: project_key, nm: project_name, my_img: "home_project.png", sdesc: sdesc, local_file: true, download_url: downloadURL,audioName:audioName)
         self.project_data.append(mydata)
     }
     
@@ -1239,19 +1256,57 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
                 vc.get_lyrics_text = master_file_data[selected_file].lyrics!
                 self.navigationController?.pushViewController(vc, animated: true)
             }
-            
-            
-            
-            
-            
         }else if(current_selected_type == "project"){
+            var id_invite = String()
             let current_data = project_data[indexPath.row]
             let vc = self.storyboard?.instantiateViewController(withIdentifier: "home_project_sid") as! HomeProjectVC
             vc.current_project_id = current_data.myId!
             vc.current_project_nm = current_data.nm!
+            if current_data.audioName != ""{
+              vc.AudioName  = current_data.audioName!
+            }
+            
             vc.current_project_download_url = current_data.download_url!
             vc.come_from_push = true
-            self.navigationController?.pushViewController(vc, animated: true)
+            let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
+            userRef.child("projects").observeSingleEvent(of: .value, with: { (snapshot) in
+                print(userRef)
+                if (snapshot.exists()){
+                    print(snapshot)
+                    if(snapshot.hasChild(current_data.myId!)){
+                        if let data = snapshot.childSnapshot(forPath: current_data.myId!).value as? NSDictionary{
+                            let check = data.value(forKey: "invite_id") as? String
+                            if check == nil{
+                                self.navigationController?.pushViewController(vc, animated: true)
+                            } else {
+                                let inviteId = data.value(forKey: "invite_id")
+                                id_invite = inviteId as! String
+                                var ref: DatabaseReference!
+                                ref = Database.database().reference()
+                                ref.child("collaborations").child(current_data.myId!).child("invitations").child(check!).observeSingleEvent(of: .value, with: { (snapshot) in
+                                    if(snapshot.exists()){
+                                        let userSnap = snapshot as! DataSnapshot
+                                        let snapValue = userSnap.value as? NSDictionary
+                                        let inviteStatus = snapValue?.value(forKey: "invite_status") as! String
+                                        if (inviteStatus == "accept"){
+                                            self.navigationController?.pushViewController(vc, animated: true)
+                                        } else{
+                                            let AcceptVC = self.storyboard?.instantiateViewController(withIdentifier: "AcceptInviteVC") as! AcceptInviteVC
+                                            let name : String!
+                                            name = snapValue?.value(forKey: "sender_name") as! String
+                                            AcceptVC.inviter_name = name
+                                            AcceptVC.inviteId = id_invite
+                                            AcceptVC.projectId = current_data.myId!
+                                            self.navigationController?.pushViewController(AcceptVC, animated: true)
+                                        }
+                                        
+                                    }
+                                })
+                            }
+                        }
+                    }
+                }
+            })
         }else{
             if(HomeFileData[indexPath.row].uid == "tully"){
                 Mixpanel.mainInstance().track(event: "Getting started")
@@ -1336,6 +1391,9 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         }
         else if collectionView == home_project_collectionview_ref{
             let current_data = project_data[indexPath.row]
+            print(current_data.download_url)
+            print(current_data.nm?.removingPercentEncoding)
+            print(current_data.sdesc)
             let myCell = collectionView.dequeueReusableCell(withReuseIdentifier: "home_project_cvcell", for: indexPath) as! HomeProjectCVCell
             myCell.title_lbl_ref.text = current_data.nm?.removingPercentEncoding
             myCell.desc_lbl_ref.text = current_data.sdesc
@@ -1468,14 +1526,48 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         if(select_any_tbl_view_ref.alpha == 1.0){
             let touchPoint = press.location(in: self.select_any_tbl_view_ref)
             indexPath = self.select_any_tbl_view_ref.indexPathForRow(at: touchPoint)
-            
         }else{
             current_selected_type="project"
             let p = press.location(in: self.home_project_collectionview_ref)
             indexPath = self.home_project_collectionview_ref.indexPathForItem(at: p)
         }
         
-        if let index = indexPath {
+        if let currentUserID = Auth.auth().currentUser?.uid {
+            
+            let currentProjectId = project_data[(indexPath?.item)!].myId as! String
+            
+            var ref: DatabaseReference!
+            ref = Database.database().reference()
+            
+            ref.child(currentUserID).child("projects").child(currentProjectId).observe(.value, with: { (snap) in
+                print(snap)
+                if snap.exists() {
+                    
+                    let receivedData = snap.value as! [String: Any]
+                    
+                    if (receivedData["invite_id"] as? String) == nil {
+                        
+                        ref.child("collaborations").child(currentProjectId).observe(.value, with: { (innerSnap) in
+                            
+                            if innerSnap.exists() {
+                                // Collaboration project
+                                
+                                self.showOptionOnLongPress(indexPath: indexPath! as NSIndexPath, needToShowDelete: false)
+                            }
+                            else {
+                                // Not a Collaboration project
+                                self.showOptionOnLongPress(indexPath: indexPath! as NSIndexPath, needToShowDelete: true)
+                            }
+                        })
+                    }
+                }
+            })
+        }
+    }
+    
+    func showOptionOnLongPress(indexPath: NSIndexPath, needToShowDelete: Bool) {
+        
+        if let index = indexPath as? NSIndexPath {
             //self.current_selected_type = "project"
             self.current_selected_index = index.row
             let alertController = UIAlertController(title: nil, message:nil, preferredStyle: .actionSheet)
@@ -1491,17 +1583,20 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
             }
             alertController.addAction(shareAction)
             
-            let destroyAction = UIAlertAction(title: "Delete", style: .destructive) { action in
-                self.delete_project_file_btn_click()
+            if needToShowDelete {
+                
+                let destroyAction = UIAlertAction(title: "Delete", style: .destructive) { action in
+                    self.delete_project_file_btn_click()
+                }
+                alertController.addAction(destroyAction)
             }
-            alertController.addAction(destroyAction)
+            
             self.present(alertController, animated: true) {}
         }
         else {
             display_alert(msg_title: "Not find", msg_desc: "Could not find index path", action_title: "OK")
         }
     }
-    
     
     func addAnnotiationFile(press : UILongPressGestureRecognizer)
     {
@@ -1589,49 +1684,54 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
             let vc = self.storyboard?.instantiateViewController(withIdentifier: "home_project_sid") as! HomeProjectVC
             vc.current_project_id = current_data.myId!
             vc.current_project_nm = current_data.nm!
+            print(current_data.download_url!)
+            if current_data.audioName != ""{
+                vc.AudioName  = current_data.audioName!
+            }
             vc.current_project_download_url = current_data.download_url!
             vc.come_from_push = true
             
             let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
             userRef.child("projects").observeSingleEvent(of: .value, with: { (snapshot) in
-                print(userRef)
                 if (snapshot.exists()){
                     print(snapshot)
                     if(snapshot.hasChild(current_data.myId!)){
                         if let data = snapshot.childSnapshot(forPath: current_data.myId!).value as? NSDictionary{
-                            if let check = data.value(forKey: "accept_invite") as? Bool{
-                                if(check){
-                                    self.navigationController?.pushViewController(vc, animated: true)
-                                } else {
-                                    let inviteId = data.value(forKey: "invite_id")
-                                    id_invite = inviteId as! String
-                                    var ref: DatabaseReference!
-                                    ref = Database.database().reference()
-                                    ref.child("collaborations").child(current_data.myId!).child("invitations").child(id_invite).observeSingleEvent(of: .value, with: { (snapshot) in
-                                        if(snapshot.exists()){
-                                            print(id_invite)
-                                            print(current_data.myId!)
-                                            let userSnap = snapshot as! DataSnapshot
-                                            let qwerty = userSnap.value as? NSDictionary
+                            
+                            let check = data.value(forKey: "invite_id") as? String
+                            if check == nil{
+                                self.navigationController?.pushViewController(vc, animated: true)
+                            } else {
+                                let inviteId = data.value(forKey: "invite_id")
+                                print(data.value(forKey: "downloadURL")as? String )
+                                id_invite = inviteId as! String
+                                var ref: DatabaseReference!
+                                ref = Database.database().reference()
+                                ref.child("collaborations").child(current_data.myId!).child("invitations").child(check!).observeSingleEvent(of: .value, with: { (snapshot) in
+                                    if(snapshot.exists()){
+                                        let userSnap = snapshot as! DataSnapshot
+                                        let snapValue = userSnap.value as? NSDictionary
+                                        let inviteStatus = snapValue?.value(forKey: "invite_status") as! String
+                                        if (inviteStatus == "accept"){
+                                            self.navigationController?.pushViewController(vc, animated: true)
+                                        } else{
                                             let AcceptVC = self.storyboard?.instantiateViewController(withIdentifier: "AcceptInviteVC") as! AcceptInviteVC
                                             let name : String!
-                                            name = "\(qwerty?.value(forKey: "sender_name")!)"
+                                            name = snapValue?.value(forKey: "sender_name") as! String
                                             AcceptVC.inviter_name = name
                                             AcceptVC.inviteId = id_invite
                                             AcceptVC.projectId = current_data.myId!
+                                            print(current_data.download_url)
                                             self.navigationController?.pushViewController(AcceptVC, animated: true)
                                         }
-                                    })
-                                }
-                            } else {
-                                self.navigationController?.pushViewController(vc, animated: true)
+                                        
+                                    }
+                                })
                             }
                         }
                     }
                 }
             })
-            
-            
         }else if collectionView == home_file_collectionview_ref{
             if(HomeFileData[indexPath.row].uid == "tully"){
                 let vc = self.storyboard?.instantiateViewController(withIdentifier: "VideoTutorialVC_sid") as! VideoTutorialVC
@@ -2111,7 +2211,7 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
             let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
             
             userRef.child("projects").queryOrdered(byChild: "project_name").queryStarting(atValue: search_text).queryEnding(atValue: search_text+MyVariables.search_last_char).observeSingleEvent(of: .value, with: { (snapshot) in
-                
+                print(snapshot)
                 self.project_data.removeAll()
                 
                 if snapshot.exists(){
@@ -2367,39 +2467,82 @@ class HomeVC: UIViewController , UICollectionViewDelegate, UICollectionViewDataS
         delete_project_file_btn_click()
     }
     
+    func deleteProjectOnSwipe() {
+        
+        
+    }
+    
     func delete_project_file_btn_click()
     {
-        if(current_selected_index == nil)
-        {
-            display_alert(msg_title: "Required", msg_desc: "You must have to select Project / Recording.", action_title: "OK")
+        if(self.current_selected_type == "project"){
+            if let currentUserID = Auth.auth().currentUser?.uid {
+                
+                let currentProjectId = project_data[self.current_selected_index!].myId as! String
+                
+                var ref: DatabaseReference!
+                ref = Database.database().reference()
+                
+                ref.child(currentUserID).child("projects").child(currentProjectId).observe(.value, with: { (snap) in
+                    print(snap)
+                    if snap.exists() {
+                        
+                        let receivedData = snap.value as! [String: Any]
+                        
+                        if (receivedData["invite_id"] as? String) == nil {
+                            
+                            ref.child("collaborations").child(currentProjectId).observe(.value, with: { (innerSnap) in
+                                
+                                if innerSnap.exists() {
+                                    // Collaboration project
+                                    
+                                    MyConstants.normal_display_alert(msg_title: Utils.shared.msgError, msg_desc: Utils.shared.you_cannot_delete_collaboration_project, action_title: Utils.shared.okText, myVC: self)
+                                }
+                                else {
+                                    // Not a Collaboration project
+                                    
+                                    self.get_project_recording(project_id: self.project_data[self.current_selected_index!].myId!)
+                                    self.remove_project(remove_project_id: self.project_data[self.current_selected_index!].myId!)
+                                }
+                            })
+                        }
+                    }
+                })
+            }
         }
-        else
-        {
-            let myMsg = "Are you sure you want to delete?"
-            let ac = UIAlertController(title: "Delete", message: myMsg, preferredStyle: .alert)
-            let attributes = [NSForegroundColorAttributeName: UIColor.red, NSFontAttributeName: UIFont(name: "Avenir-Medium", size: 16.0)!]
-            let titleAttrString = NSMutableAttributedString(string: "Delete", attributes: attributes)
-            ac.setValue(titleAttrString, forKey: "attributedTitle")
-            ac.view.tintColor = UIColor(red: 55/255, green: 74/255, blue: 103/255, alpha: 1)
-            ac.addAction(UIAlertAction(title: "Cancel", style: .default)
+        else {
+            
+            if(current_selected_index == nil)
             {
-                (result : UIAlertAction) -> Void in
-                _ = self.navigationController?.popViewController(animated: true)
-            })
-            ac.addAction(UIAlertAction(title: "Delete", style: .default)
+                display_alert(msg_title: "Required", msg_desc: "You must have to select Project / Recording.", action_title: "OK")
+            }
+            else
             {
-                (result : UIAlertAction) -> Void in
-                if(self.current_selected_type == "file"){
-                    self.remove_copy_to(audio_name: self.HomeFileData[self.current_selected_index!].tid, myId: self.HomeFileData[self.current_selected_index!].uid!)
-                }else if(self.current_selected_type == "purchase"){
-                    self.remove_purchase_beat(audio_name: self.HomeFileData[self.current_selected_index!].tid, myId: self.HomeFileData[self.current_selected_index!].uid!)
-                }else if(self.current_selected_type == "project"){
-                    self.get_project_recording(project_id: self.project_data[self.current_selected_index!].myId!)
-                    self.remove_project(remove_project_id: self.project_data[self.current_selected_index!].myId!)
-                }
-                //self.btn_all_click()
-            })
-            present(ac, animated: true)
+                let myMsg = "Are you sure you want to delete?"
+                let ac = UIAlertController(title: "Delete", message: myMsg, preferredStyle: .alert)
+                let attributes = [NSForegroundColorAttributeName: UIColor.red, NSFontAttributeName: UIFont(name: "Avenir-Medium", size: 16.0)!]
+                let titleAttrString = NSMutableAttributedString(string: "Delete", attributes: attributes)
+                ac.setValue(titleAttrString, forKey: "attributedTitle")
+                ac.view.tintColor = UIColor(red: 55/255, green: 74/255, blue: 103/255, alpha: 1)
+                ac.addAction(UIAlertAction(title: "Cancel", style: .default)
+                {
+                    (result : UIAlertAction) -> Void in
+                    _ = self.navigationController?.popViewController(animated: true)
+                })
+                ac.addAction(UIAlertAction(title: "Delete", style: .default)
+                {
+                    (result : UIAlertAction) -> Void in
+                    if(self.current_selected_type == "file"){
+                        self.remove_copy_to(audio_name: self.HomeFileData[self.current_selected_index!].tid, myId: self.HomeFileData[self.current_selected_index!].uid!)
+                    }else if(self.current_selected_type == "purchase"){
+                        self.remove_purchase_beat(audio_name: self.HomeFileData[self.current_selected_index!].tid, myId: self.HomeFileData[self.current_selected_index!].uid!)
+                    }else if(self.current_selected_type == "project"){
+                        self.get_project_recording(project_id: self.project_data[self.current_selected_index!].myId!)
+                        self.remove_project(remove_project_id: self.project_data[self.current_selected_index!].myId!)
+                    }
+                    //self.btn_all_click()
+                })
+                present(ac, animated: true)
+            }
         }
     }
     

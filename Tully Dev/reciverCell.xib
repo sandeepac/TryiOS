@@ -19,21 +19,32 @@
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1vu-Bk-hKj">
-                        <rect key="frame" x="0.0" y="0.0" width="320" height="55"/>
-                        <fontDescription key="fontDescription" name="Avenir-Heavy" family="Avenir" pointSize="16"/>
-                        <color key="textColor" red="0.24850812999999999" green="1" blue="0.59644625849999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <rect key="frame" x="5" y="5" width="250" height="44.5"/>
+                        <fontDescription key="fontDescription" name="Avenir-Medium" family="Avenir" pointSize="16"/>
+                        <nil key="textColor"/>
                         <nil key="highlightedColor"/>
                     </label>
+                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="jFz-8L-pMI">
+                        <rect key="frame" x="260" y="2.5" width="50" height="50"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="50" id="uCP-br-Cfh"/>
+                            <constraint firstAttribute="width" constant="50" id="wWP-jy-bXs"/>
+                        </constraints>
+                    </imageView>
                 </subviews>
                 <constraints>
-                    <constraint firstItem="1vu-Bk-hKj" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" id="Md2-LS-tiA"/>
-                    <constraint firstAttribute="trailing" secondItem="1vu-Bk-hKj" secondAttribute="trailing" id="UTj-sN-ojQ"/>
-                    <constraint firstItem="1vu-Bk-hKj" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="top" id="YFp-fh-VAD"/>
-                    <constraint firstAttribute="bottom" secondItem="1vu-Bk-hKj" secondAttribute="bottom" id="ngW-yx-KGc"/>
+                    <constraint firstAttribute="bottom" secondItem="1vu-Bk-hKj" secondAttribute="bottom" constant="5" id="6UR-a8-zvC"/>
+                    <constraint firstItem="1vu-Bk-hKj" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="top" constant="5" id="Dtf-4e-sHa"/>
+                    <constraint firstAttribute="trailing" secondItem="jFz-8L-pMI" secondAttribute="trailing" constant="10" id="GSh-qf-O92"/>
+                    <constraint firstItem="1vu-Bk-hKj" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" constant="5" id="Y26-pn-WsQ"/>
+                    <constraint firstItem="jFz-8L-pMI" firstAttribute="centerY" secondItem="H2p-sc-9uM" secondAttribute="centerY" id="yJc-Na-t3R"/>
+                    <constraint firstItem="jFz-8L-pMI" firstAttribute="leading" secondItem="1vu-Bk-hKj" secondAttribute="trailing" constant="5" id="zoD-AA-48Z"/>
                 </constraints>
             </tableViewCellContentView>
             <viewLayoutGuide key="safeArea" id="njF-e1-oar"/>
             <connections>
+                <outlet property="imageViewObj" destination="jFz-8L-pMI" id="gFj-0v-iav"/>
+                <outlet property="imageViewWidthConstraint" destination="wWP-jy-bXs" id="irN-Mh-Pkg"/>
                 <outlet property="reciverLbl" destination="1vu-Bk-hKj" id="ah1-dD-q1D"/>
             </connections>
             <point key="canvasLocation" x="32" y="88.5"/>

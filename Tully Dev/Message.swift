@@ -17,75 +17,92 @@ class Message {
     var type: MessageType
     var content: Any
     var timestamp: Int64
-    var isRead: Bool
     var image: UIImage?
-    private var fromID: String?
+    var fromID: String?
     var messageUserName : String?
     
-    
     //MARK: Inits
-    init(type: MessageType, content: Any, owner: MessageOwner, timestamp: Int64, isRead: Bool, messageUserName: String) {
+    init(type: MessageType, content: Any, owner: MessageOwner, timestamp: Int64, messageUserName: String, fromID: String) {
         self.type = type
         self.content = content
         self.owner = owner
         self.timestamp = timestamp
-        self.isRead = isRead
         self.messageUserName = messageUserName
+        self.fromID = fromID
     }
     
     //MARK: Methods
-    class func downloadAllMessages(projectId: String, completion: @escaping (Message) -> Swift.Void) {
+    class func downloadAllMessages(projectId: String, collaborationId: String, completion: @escaping (Message) -> Swift.Void) {
         
         if let currentUserID = Auth.auth().currentUser?.uid {
             
             var ref: DatabaseReference!
             ref = Database.database().reference()
-            ref.child("collaborations").child(projectId).child("chats").observe(.value, with: { (snap) in
+            
+            ref.child("collaborations").child(projectId).child(collaborationId).child(currentUserID).observe(.value, with: { (snapshot) in
                 
-                if snap.exists() {
+                if snapshot.exists() {
                     
-                    for task in snap.children {
-                        
-                        guard let taskSnapshot = task as? DataSnapshot else {
-                            continue
-                        }
-                        
-                        let receivedMessage = taskSnapshot.value as! [String: Any]
-                        
-                        var type = MessageType.text
-                        
-                        var content = receivedMessage["messageText"] as? String
-                        
-                        let fileURL = receivedMessage["fileURL"] as? String
-                        
-                        if (fileURL?.contains("images"))! {
-                            
-                            type = .photo
-                            
-                            content = fileURL
-                        }
-                        else if (fileURL?.contains("docs"))! {
-                            
-                            type = .docs
-                            
-                            content = fileURL
-                        }
-                        
-                        let fromID = receivedMessage["messageUserId"] as? String
-                        let timestamp = receivedMessage["messageTime"] as? Int
-                        let messageUser = receivedMessage["messageUser"] as? String
-                        
-                        if fromID == currentUserID {
-                            
-                            let message = Message.init(type: type, content: content ?? "", owner: .receiver, timestamp: Int64(timestamp ?? 0), isRead: true, messageUserName: messageUser ?? "")
-                            completion(message)
-                        }
-                        else {
-                            
-                            let message = Message.init(type: type, content: content ?? "", owner: .sender, timestamp: Int64(timestamp ?? 0), isRead: true, messageUserName: messageUser ?? "")
-                            completion(message)
-                        }
+                    guard let snapshotTask = snapshot as? DataSnapshot else {
+                        return
                     }
+                    
+                    let userDict = snapshotTask.value as! [String: Any]
+                    
+                    guard let added_on = userDict["added_on"] as? Int64 else { return }
+                    
+                    ref.child("collaborations").child(projectId).child("chats").observe(.value, with: { (snap) in
+                        
+                        if snap.exists() {
+                            
+                            for task in snap.children {
+                                
+                                guard let taskSnapshot = task as? DataSnapshot else {
+                                    continue
+                                }
+                                
+                                let receivedMessage = taskSnapshot.value as! [String: Any]
+                                
+                                var type = MessageType.text
+                                
+                                var content = receivedMessage["messageText"] as? String
+                                
+                                let fileURL = receivedMessage["fileURL"] as? String
+                                
+                                if (fileURL?.contains("images"))! {
+                                    
+                                    type = .photo
+                                    
+                                    content = fileURL
+                                }
+                                else if (fileURL?.contains("docs"))! {
+                                    
+                                    type = .docs
+                                    
+                                    content = fileURL
+                                }
+                                
+                                let fromID = receivedMessage["messageUserId"] as? String
+                                let timestamp = receivedMessage["messageTime"] as? Int64
+                                let messageUser = receivedMessage["messageUser"] as? String
+                                
+                                if timestamp! > added_on {
+                                    
+                                    if fromID == currentUserID {
+                                        
+                                        let message = Message.init(type: type, content: content ?? "", owner: .receiver, timestamp: Int64(timestamp ?? 0), messageUserName: messageUser ?? "", fromID: fromID!)
+                                        completion(message)
+                                    }
+                                    else {
+                                        
+                                        let message = Message.init(type: type, content: content ?? "", owner: .sender, timestamp: Int64(timestamp ?? 0), messageUserName: messageUser ?? "", fromID: fromID!)
+                                        completion(message)
+                                    }
+                                }
+                                
+                            }
+                        }
+                    })
                 }
             })
         }
@@ -123,9 +140,17 @@ class Message {
                         
                         if mimeType == "pdf" {
                             
+                            LocalImages.saveDocuments(url: URL(string: path!)!, timestamp: message.timestamp, mimeType: "pdf", completion: { (isSaved) in
+                                
+                            })
+                            
                             path = "\(path!).pdf"
                         }
                         else {
+                            
+                            LocalImages.saveDocuments(url: URL(string: path!)!, timestamp: message.timestamp, mimeType: "doc", completion: { (isSaved) in
+                                
+                            })
                             
                             path = "\(path!).doc"
                         }
@@ -150,7 +175,10 @@ class Message {
                         let values = ["fileURL": path!, "messageText": "", "messageUserId": currentUserID, "messageTime": message.timestamp, "messageUser": name ?? ""] as [String : Any]
                         Database.database().reference().child("collaborations").child(projectId).child("chats").childByAutoId().setValue(values, withCompletionBlock: { (error, reference) in
                             
+                            print(reference)
                         })
+                        
+                        LocalImages.saveImage(url: URL(string: path!)!, timestamp: message.timestamp)
                     }
                 })
                 

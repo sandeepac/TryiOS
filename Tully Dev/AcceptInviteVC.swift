@@ -10,15 +10,19 @@ import UIKit
 import Firebase
 class AcceptInviteVC: UIViewController {
 
+    @IBOutlet weak var activityIdicator: UIActivityIndicatorView!
     @IBOutlet weak var lbl_inviter_name: UILabel!
     var inviter_name : String!
     var projectId = String()
     var inviteId = String()
+    var collabrationId = String()
     var ref: DatabaseReference!
     var body = String()
+    var collaborationId = String()
     override func viewDidLoad() {
         super.viewDidLoad()
-        lbl_inviter_name.text = "\(inviter_name!) invited you to collaborate"
+        activityIdicator.isHidden = true
+        lbl_inviter_name.text = "\(inviter_name!) \(Utils.shared.invited_you_to_collaborate)"
     }
 
     override func didReceiveMemoryWarning() {
@@ -31,11 +35,10 @@ class AcceptInviteVC: UIViewController {
     @IBAction func btnAcceptClicked(_ sender: UIButton) {
         ref = Database.database().reference()
 
-        let inviteData : [String : Any] = ["invite_accept" : true]
+        let inviteData : [String : Any] = ["invite_status" : "accept"]
         ref.child("collaborations").child(projectId).child("invitations").child(inviteId).updateChildValues(inviteData)
-        print(projectId)
-        let vc : CollabrationVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "CollabrationVC") as! CollabrationVC
-        vc.currentProjectId = projectId
+        let vc : HomeVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "HomeVCSid") as! HomeVC
+        //vc.currentProjectId = self.projectId
         self.navigationController?.pushViewController(vc, animated: true)
         print("data updated")
     }
@@ -45,16 +48,40 @@ class AcceptInviteVC: UIViewController {
         let userid = Auth.auth().currentUser?.uid
         let projectIdToDelete = ref.child(userid!).child("projects").child(projectId)
         
-            let invitationsStorageRef = ref.child("collaborations").child(projectId).child("invitations").child(inviteId)
-        invitationsStorageRef.removeValue { error, _ in
-            //error in delete invitation
-        }
+        let inviteData : [String : Any] = ["invite_status" : "decline"]
+        ref.child("collaborations").child(projectId).child("invitations").child(inviteId).updateChildValues(inviteData)
+        
         projectIdToDelete.removeValue { error, _ in
             //error in deleting projectId
         }
         self.navigationController?.popViewController(animated: true)
 
         }
-
     
+//    func getCollaborationId(){
+//        let userRef = FirebaseManager.getRefference().child((Auth.auth().currentUser?.uid)!).ref
+//        userRef.child("projects").observeSingleEvent(of: .value, with: { (snapshot) in
+//
+//            if (snapshot.exists()){
+//                if(snapshot.hasChild(self.projectId)){
+//                    if let data = snapshot.childSnapshot(forPath: self.projectId).value as? NSDictionary{
+//                        print("Data->",data)
+//                        if let check = data.value(forKey: "collaboration_id") as? String{
+//
+//                            self.collaborationId = check
+//                            let vc : CollabrationViewController = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "CollabrationViewController") as! CollabrationViewController
+//                            vc.currentProjectId = self.projectId
+//                            vc.collabrationID = self.collaborationId
+//                            self.navigationController?.pushViewController(vc, animated: true)
+//                            print("Collaboration id = \(self.collaborationId)")
+//
+//                        }
+//                    }
+//                }
+//            }
+//        })
+    
+   //}
+    
+
 }

@@ -10,6 +10,8 @@ import UIKit
 
 class reciverCell: UITableViewCell {
     @IBOutlet weak var reciverLbl: UILabel!
+    @IBOutlet weak var imageViewObj: UIImageView!
+    @IBOutlet weak var imageViewWidthConstraint: NSLayoutConstraint!
     
     override func awakeFromNib() {
         super.awakeFromNib()

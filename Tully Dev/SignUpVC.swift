@@ -91,6 +91,10 @@ class SignUpVC: UIViewController , UITextFieldDelegate
                     MyConstants.display_alert(msg_title: "Error", msg_desc: error.localizedDescription, action_title: "OK", navpop: true, myVC: self)
                 }
                 else{
+//                    let uid = Auth.auth().currentUser?.uid
+//                    let userRef = FirebaseManager.getRefference().child(uid!).ref
+//                    let currentPlanData : [String : Any] = [ "from" : "ios", "is_subscribe" : false]
+//                    userRef.child("settings").child("CollaborationSubscription").setValue(currentPlanData)
                     
                     MyVariables.login_by_fb = false
                     UserDefaults.standard.set(email, forKey: "tully_email")
@@ -149,4 +153,5 @@ class SignUpVC: UIViewController , UITextFieldDelegate
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
+    
 }

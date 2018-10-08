@@ -219,8 +219,6 @@ class CreateProjectVC: UIViewController, UITextFieldDelegate
                             FirebaseManager.sync_project_recording_file(myfilename_tid: audio_sticks, myfilePath: dest_path, projectId: self.project_id, rec_id: recording_key, delete_remaining: true)
                             
                             self.giveProjectDataProtocol?.setProjectData(projectId : self.project_id, projectName : self.project_name, recording_url : self.audio_url!)
-                            Singleton.shared.projectID = self.project_id
-                            print(Singleton.shared.projectID)
                             self.myActivityIndicator.stopAnimating()
                             MyConstants.removeAnimate(myView: self.view, myVC: self)
                             
