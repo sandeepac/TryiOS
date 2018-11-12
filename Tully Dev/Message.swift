@@ -32,7 +32,7 @@ class Message {
     }
     
     //MARK: Methods
-    class func downloadAllMessages(projectId: String, collaborationId: String, completion: @escaping (Message) -> Swift.Void) {
+    class func downloadAllMessages(projectId: String, collaborationId: String, completion: @escaping ([Message]) -> Swift.Void) {
         
         if let currentUserID = Auth.auth().currentUser?.uid {
             
@@ -53,6 +53,8 @@ class Message {
                     
                     ref.child("collaborations").child(projectId).child("chats").observe(.value, with: { (snap) in
                         
+                        var MessageArray = [Message]()
+
                         if snap.exists() {
                             
                             for task in snap.children {
@@ -91,16 +93,24 @@ class Message {
                                     if fromID == currentUserID {
                                         
                                         let message = Message.init(type: type, content: content ?? "", owner: .receiver, timestamp: Int64(timestamp ?? 0), messageUserName: messageUser ?? "", fromID: fromID!)
-                                        completion(message)
+                                        
+                                        MessageArray.append(message)
                                     }
                                     else {
                                         
                                         let message = Message.init(type: type, content: content ?? "", owner: .sender, timestamp: Int64(timestamp ?? 0), messageUserName: messageUser ?? "", fromID: fromID!)
-                                        completion(message)
+                                        
+                                        MessageArray.append(message)
                                     }
                                 }
                                 
                             }
+                            
+                            completion(MessageArray)
+                        }
+                        else {
+                            
+                            completion(MessageArray)
                         }
                     })
                 }
@@ -178,7 +188,9 @@ class Message {
                             print(reference)
                         })
                         
-                        LocalImages.saveImage(url: URL(string: path!)!, timestamp: message.timestamp)
+                        LocalImages.saveImage(url: URL(string: path!)!, timestamp: message.timestamp, completion: { (isSaved) in
+                            
+                        })
                     }
                 })
                 

@@ -1,7 +1,7 @@
 organization=sandeepac-github
 projectKey=sandeepac_TryiOS
 serverUrl=https://sonarcloud.io
-serverVersion=7.4.0.17856
+serverVersion=7.4.0.18624
 dashboardUrl=https://sonarcloud.io/dashboard?id=sandeepac_TryiOS
-ceTaskId=AWZTjyLfMw52PrQC0S9C
-ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AWZTjyLfMw52PrQC0S9C
+ceTaskId=AWakcerwCbT38AxgDiyP
+ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AWakcerwCbT38AxgDiyP

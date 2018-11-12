@@ -11,8 +11,10 @@ import UIKit
 class reciverCell: UITableViewCell {
     @IBOutlet weak var reciverLbl: UILabel!
     @IBOutlet weak var imageViewObj: UIImageView!
-    @IBOutlet weak var imageViewWidthConstraint: NSLayoutConstraint!
+   
+    @IBOutlet weak var imagaViewWidthConstraint: NSLayoutConstraint!
     
+    @IBOutlet weak var senderNameLbl: UILabel!
     override func awakeFromNib() {
         super.awakeFromNib()
         // Initialization code

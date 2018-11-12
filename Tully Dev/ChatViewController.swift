@@ -30,8 +30,8 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     var items = [Message]()
     var recipientList = [[String : Any]]()
-    var currentProjectId = ""
-    var currentCollaborationId = ""
+    static var currentProjectId = ""
+    static var currentCollaborationId = ""
     
     var alert = UIAlertController()
     
@@ -43,7 +43,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     var keyboardHeight = 0
     var containerViewInitialHeight = 54
-    
+    var isComeFromNotification = false
     //MARK: Constants declaration
     
     let dateFormat = "MMM dd YYYY"
@@ -63,6 +63,8 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         inputTextView.delegate = self
         
+        self.hidesBottomBarWhenPushed = true
+        
         inputTextView.text = Utils.shared.textViewPlaceholderText
         inputTextView.textColor = textViewPlaceholderColor
         inputTextView.autocorrectionType = .no
@@ -78,7 +80,10 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         fetchData()
         
-        setImageOnNavigationBar()
+        if !isComeFromNotification {
+            
+            setImageOnNavigationBar()
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -144,31 +149,29 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     //MARK: Downloads messages from firebase
     func fetchData() {
         
-        Message.downloadAllMessages(projectId: currentProjectId, collaborationId: currentCollaborationId, completion: {[weak weakSelf = self] (message) in
+        Message.downloadAllMessages(projectId: ChatViewController.currentProjectId, collaborationId: ChatViewController.currentCollaborationId, completion: {[weak weakSelf = self] (MessageArray) in
             
             self.alert.dismiss(animated: true, completion: nil)
             
-            let recievedMessageText = message.content as! String
-            let recievedTimestamp = message.timestamp
+            weakSelf?.items.removeAll()
             
-            for i in 0..<self.items.count {
+            for i in 0..<MessageArray.count {
                 
-                let messageText = self.items[i].content as! String
-                let timestamp = self.items[i].timestamp
+                let message = MessageArray[i]
+                                
+                weakSelf?.items.append(message)
                 
-                if messageText == recievedMessageText && timestamp == recievedTimestamp {
-                    
-                    return
-                }
-            }
-            
-            weakSelf?.items.append(message)
-            
-            weakSelf?.items.sort{ $0.timestamp < $1.timestamp }
-            DispatchQueue.main.async {
-                if let state = weakSelf?.items.isEmpty, !state {
-                    weakSelf?.chatTableView.reloadData()
-//                    weakSelf?.chatTableView.scrollToRow(at: IndexPath.init(row: self.items.count - 1, section: 0), at: .bottom, animated: false)
+                weakSelf?.items.sort{ $0.timestamp < $1.timestamp }
+                DispatchQueue.main.async {
+                    if let state = weakSelf?.items.isEmpty, !state {
+                        
+                        if i == (MessageArray.count - 1) {
+                            
+                            weakSelf?.chatTableView.reloadData()
+                            weakSelf?.chatTableView.scrollToRow(at: IndexPath.init(row: self.items.count - 1, section: 0), at: .bottom, animated: false)
+
+                        }
+                    }
                 }
             }
         })
@@ -185,8 +188,8 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         inputTextView.resignFirstResponder()
         
         let vc : ListOfCollaboratorsViewController = UIStoryboard.init(name: storyboardName, bundle: nil).instantiateViewController(withIdentifier: "ListOfCollaboratorsViewController") as! ListOfCollaboratorsViewController
-        vc.collaboratioId = currentCollaborationId
-        vc.currentProjectId = currentProjectId
+        vc.collaboratioId = ChatViewController.currentCollaborationId
+        vc.currentProjectId = ChatViewController.currentProjectId
         
         self.navigationController?.pushViewController(vc, animated: true)
         
@@ -215,10 +218,29 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         let actionSheetController: UIAlertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         
+        let cameraAction : UIAlertAction = UIAlertAction(title: Utils.shared.camera, style: .default, handler: {(cameraAction) in
+            
+            if UIImagePickerController.isSourceTypeAvailable(UIImagePickerControllerSourceType.camera) == true {
+                
+                let imagePickerController = UIImagePickerController()
+                imagePickerController.sourceType = .camera
+                imagePickerController.allowsEditing = true
+                imagePickerController.delegate = self as UIImagePickerControllerDelegate & UINavigationControllerDelegate
+                self.present(imagePickerController, animated: true, completion: nil)
+                
+            }else{
+                let alert = UIAlertController(title: "", message: Utils.shared.camera_is_not_available, preferredStyle: UIAlertControllerStyle.alert)
+                alert.addAction(UIAlertAction(title: Utils.shared.ok, style: UIAlertActionStyle.default, handler: nil))
+                self.present(alert, animated: true, completion: nil)
+            }
+        })
+        
+        
         let photoAction: UIAlertAction = UIAlertAction(title: Utils.shared.choosePhoto, style: .default) { action -> Void in
             
             let imagePickerController = UIImagePickerController()
             imagePickerController.sourceType = .photoLibrary
+            imagePickerController.allowsEditing = true
             imagePickerController.delegate = self as UIImagePickerControllerDelegate & UINavigationControllerDelegate
             self.present(imagePickerController, animated: true, completion: nil)
         }
@@ -236,6 +258,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
             //We dont need to add any code for Cancel button
         }
         
+        actionSheetController.addAction(cameraAction)
         actionSheetController.addAction(photoAction)
         actionSheetController.addAction(documentAction)
         actionSheetController.addAction(cancelAction)
@@ -263,7 +286,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     
                     let message = Message.init(type: type, content: content, owner: .sender, timestamp: milliseconds, messageUserName: name!, fromID: currentUserID)
                     
-                    Message.send(projectId: self.currentProjectId, message: message, mimeType: mimeType, completion: {(_) in
+                    Message.send(projectId: ChatViewController.currentProjectId, message: message, mimeType: mimeType, completion: {(_) in
                         
                         //Have to perform UI changes
                     })
@@ -369,26 +392,26 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     cell.messageBackground.isHidden = true
                 case .photo:
                     
-                    //                    if let imgUrl = self.items[indexPath.row].content as? String {
-                    //
-                    //                        cell.messageBackground.sd_setImage(with: URL(string: imgUrl), placeholderImage: #imageLiteral(resourceName: "loading"))
-                    //                    }
-                    //                    else {
-                    //
-                    //                        cell.messageBackground.image = UIImage.init(named: "loading")
-                    //                    }
-                    if let image = self.items[indexPath.row].image {
-                        cell.messageBackground.image = image
-                    } else {
-                        cell.messageBackground.image = UIImage.init(named: "loading")
-                        self.items[indexPath.row].downloadImage(indexpathRow: indexPath.row, completion: { (state, index) in
-                            if state {
-                                DispatchQueue.main.async {
-                                    self.chatTableView.reloadData()
-                                }
-                            }
-                        })
-                    }
+                                        if let imgUrl = self.items[indexPath.row].content as? String {
+                    
+                                            cell.messageBackground.sd_setImage(with: URL(string: imgUrl), placeholderImage: #imageLiteral(resourceName: "loading"))
+                                        }
+                                        else {
+                    
+                                            cell.messageBackground.image = UIImage.init(named: "loading")
+                                        }
+//                    if let image = self.items[indexPath.row].image {
+//                        cell.messageBackground.image = image
+//                    } else {
+//                        cell.messageBackground.image = UIImage.init(named: "loading")
+//                        self.items[indexPath.row].downloadImage(indexpathRow: indexPath.row, completion: { (state, index) in
+//                            if state {
+//                                DispatchQueue.main.async {
+//                                    self.chatTableView.reloadData()
+//                                }
+//                            }
+//                        })
+//                    }
                     
                     cell.docImageView.isHidden = true
                     cell.docName.isHidden = true
@@ -448,26 +471,26 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
                         cell.downloadImage.isHidden = false
                     }
                     
-                    //                    if let imgUrl = self.items[indexPath.row].content as? String {
-                    //
-                    //                        cell.messageBackground.sd_setImage(with: URL(string: imgUrl), placeholderImage: #imageLiteral(resourceName: "loading"))
-                    //                    }
-                    //                    else {
-                    //
-                    //                        cell.messageBackground.image = UIImage.init(named: "loading")
-                    //                    }
-                    if let image = self.items[indexPath.row].image {
-                        cell.messageBackground.image = image
-                    } else {
-                        cell.messageBackground.image = UIImage.init(named: "loading")
-                        self.items[indexPath.row].downloadImage(indexpathRow: indexPath.row, completion: { (state, index) in
-                            if state {
-                                DispatchQueue.main.async {
-                                    self.chatTableView.reloadData()
-                                }
-                            }
-                        })
-                    }
+                                        if let imgUrl = self.items[indexPath.row].content as? String {
+                    
+                                            cell.messageBackground.sd_setImage(with: URL(string: imgUrl), placeholderImage: #imageLiteral(resourceName: "loading"))
+                                        }
+                                        else {
+                    
+                                            cell.messageBackground.image = UIImage.init(named: "loading")
+                                        }
+//                    if let image = self.items[indexPath.row].image {
+//                        cell.messageBackground.image = image
+//                    } else {
+//                        cell.messageBackground.image = UIImage.init(named: "loading")
+//                        self.items[indexPath.row].downloadImage(indexpathRow: indexPath.row, completion: { (state, index) in
+//                            if state {
+//                                DispatchQueue.main.async {
+//                                    self.chatTableView.reloadData()
+//                                }
+//                            }
+//                        })
+//                    }
                     
                     cell.docImageView.isHidden = true
                     cell.docName.isHidden = true
@@ -584,11 +607,16 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     }
                     else {
                         
-                        saveImageInPhotos(string: items[indexPath.row].content as! String)
+                        LocalImages.saveImage(url: URL(string: items[indexPath.row].content as! String)!, timestamp: items[indexPath.row].timestamp, completion: { (isSaved) in
+                            
+                            self.saveImageInPhotos(string: self.items[indexPath.row].content as! String)
+
+                            DispatchQueue.main.async {
+                                
+                                self.chatTableView.reloadRows(at: [indexPath], with: .automatic)
+                            }
+                        })
                         
-                        LocalImages.saveImage(url: URL(string: items[indexPath.row].content as! String)!, timestamp: items[indexPath.row].timestamp)
-                        
-                        chatTableView.reloadRows(at: [indexPath], with: .automatic)
 //                        chatTableView.reloadData()
                     }
                 }
@@ -847,7 +875,7 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         var ref: DatabaseReference!
         ref = Database.database().reference()
-        ref.child("collaborations").child(currentProjectId).child(currentCollaborationId).observeSingleEvent(of: .value, with: { (snap) in
+        ref.child("collaborations").child(ChatViewController.currentProjectId).child(ChatViewController.currentCollaborationId).observeSingleEvent(of: .value, with: { (snap) in
             
             if snap.exists() {
                 
@@ -871,7 +899,10 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
                                 receivedData["userId"] = userIdKey
                                 self.recipientList.append(receivedData)
                                 
-                                //                                self.setImageOnNavigationBar()
+                                if self.isComeFromNotification {
+                                    
+                                    self.setImageOnNavigationBar()
+                                }
                             }
                         })
                     }
@@ -989,15 +1020,42 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     func setImageOnNavigationBar() {
         
-        if recipientListForHeader.count == 1 {
+        var array = [[String : Any]]()
+        
+        if isComeFromNotification {
+
+            array = recipientList
+        }
+        else {
             
-            headerImageView2.isHidden = true
+            array = recipientListForHeader
+        }
+        
+        if array.count == 1 {
+            
+            if isComeFromNotification {
+
+                headerImageView2.isHidden = false
+            }
+            else {
+                
+                headerImageView2.isHidden = true
+            }
+            
             collaboratorCountLbl.isHidden = true
         }
-        else if recipientListForHeader.count == 2 {
+        else if array.count == 2 {
             
             headerImageView2.isHidden = false
-            collaboratorCountLbl.isHidden = true
+            
+            if isComeFromNotification {
+
+                collaboratorCountLbl.isHidden = false
+            }
+            else {
+                
+                collaboratorCountLbl.isHidden = true
+            }
         }
         else {
             
@@ -1005,14 +1063,21 @@ class ChatViewController: UIViewController, UITableViewDataSource, UITableViewDe
             collaboratorCountLbl.isHidden = false
         }
         
-        if !recipientListForHeader.isEmpty {
+        if !array.isEmpty {
             
-            collaboratorCountLbl.text = "+\(recipientListForHeader.count - 2)"
+            if isComeFromNotification {
+
+                collaboratorCountLbl.text = "+\(array.count - 1)"
+            }
+            else {
+                
+                collaboratorCountLbl.text = "+\(array.count - 2)"
+            }
         }
         
         var imgUrl1 = "", imgUrl2 = ""
         
-        for i in recipientListForHeader {
+        for i in array {
             
             if let myimg = i["myimg"] as? String {
                 

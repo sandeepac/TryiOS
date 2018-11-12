@@ -59,7 +59,7 @@ func hexStringToUIColor (hex:String) -> UIColor {
 protocol get_coll_data_protocol {
     func lyrics_data(lyrics_key : String, lyrics_txt : String, count_recording : Int,repeat_play_data : Bool, is_looping : Bool, looping_start_index : Int, looping_end_index : Int)
 }
-class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPlayerDelegate, AVAudioRecorderDelegate, send_lyrics_data, CBCentralManagerDelegate,UITableViewDelegate,UITableViewDataSource, looping_protocol {
+class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPlayerDelegate, AVAudioRecorderDelegate, send_lyrics_data, CBCentralManagerDelegate,UITableViewDelegate,UITableViewDataSource, looping_protocol, selectedDataProtocol, UICollectionViewDelegate, UICollectionViewDataSource, UIScrollViewDelegate {
     
     var currentProjectId = String()
     var collabrationID = String()
@@ -73,7 +73,7 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
     @IBOutlet weak var usercountView: UIView!
     @IBOutlet weak var chatcountLbl: UILabel!
     @IBOutlet weak var chatTbl: UITableView!
-    @IBOutlet weak var lyricsTxtView: UITextView!
+    @IBOutlet weak var lyricsTxtView: CustomTextField!
     
     @IBOutlet weak var lyricsTxtViewBottomConstraints: NSLayoutConstraint!
     @IBOutlet weak var recording_view_height_constraint: NSLayoutConstraint!
@@ -137,6 +137,40 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
     @IBOutlet var loop_lbl_ref: UILabel!
     @IBOutlet weak var innerViewBottomConstraint: NSLayoutConstraint!
     
+    @IBOutlet var writeLyricsButton: UIButton!
+    @IBOutlet var writeLyricsImageButton: UIButton!
+    @IBOutlet var writLyricsBtnHeightConstraint: NSLayoutConstraint!
+    
+    @IBOutlet var collaborationButton: UIButton!
+
+    @IBOutlet var collaboratorCollectionViewObj: UICollectionView!
+    
+    @IBOutlet var collactionViewWidthConstraint: NSLayoutConstraint!
+    var needToShowCollectionView = false
+    var needToShowExpandView = false
+    var needToShowWriteButton = false
+    var isSelectedTextTableShown = false
+    
+    var isPlayerHidden = false
+
+    @IBOutlet var arrowButtonObj: UIButton!
+    @IBOutlet var arrowButtonLeadingConstraint: NSLayoutConstraint!
+    
+    @IBOutlet var expandViewObj: UIView!
+    @IBOutlet var expandBtn: UIButton!
+    @IBOutlet var groupChatBtn: UIButton!
+    @IBOutlet var settingsBtn: UIButton!
+    
+    @IBOutlet var groupChatBtnOnNavigation: UIButton!
+    
+    @IBOutlet var collectionViewXConstraint: NSLayoutConstraint!
+    
+    @IBOutlet var playRecordingViewHeightConstraint: NSLayoutConstraint!
+    @IBOutlet var nonEditableLyricsTextView: CustomTextField!
+    var refHandler = DatabaseReference()
+    var refHandlerForIsActiveStatus = DatabaseReference()
+    
+    var currentUserDict = [String : Any]()
     var collabration = String()
     var fromUserLyricsTap = String()
     var lyriscData = [[String: Any]]()
@@ -199,72 +233,91 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
     let textViewTextColor = UIColor.black
     
     var allCollaboratorsKey = [String]()
+    
+    var needToUpdateTextView = true
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        DispatchQueue.main.async {
-            self.setUI()
+        if !isSelectedTextTableShown {
+            
+            self.hidesBottomBarWhenPushed = true
+            
+            lyricsTxtView.autocorrectionType = .no
+            lyricsTxtView.isScrollEnabled = true
+            writeLyricsButton.isSelected = false
+            
+            nonEditableLyricsTextView.isHidden = true
+            
+            writeLyricsButtonTapped((Any).self)
+            addDoneButtonOnKeyboard()
+            setNavigationBar()
+            hideShowExpandView()
+            
+            arrowButtonObj.setImage(UIImage(named: "right_arrow-icon"), for: .normal)
+            self.getCollabratorsData()
+            
+            //        self.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(CollabrationViewController.getDataForTable), userInfo: nil, repeats: true)
+            DispatchQueue.main.async {
+                self.setUI()
+            }
+            self.chatTbl.delegate = self
+            self.chatTbl.dataSource = self
+            self.lyricsTxtView.delegate = self
+            
+            self.chatTbl.rowHeight = UITableViewAutomaticDimension
+            
+            let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(CollabrationViewController.dismissKeyboard))
+            chatTbl.addGestureRecognizer(tap)
+            let nibName = UINib(nibName: Utils.shared.reciverNibName, bundle: nil)
+            chatTbl.register(nibName, forCellReuseIdentifier: Utils.shared.reciverCellIdentifier)
+            manager = CBCentralManager(delegate: self, queue: nil, options: nil)
+            manager.delegate = self
+            let screenWidth = UIScreen.main.bounds.width
+            var height_width = ((screenWidth / 5) - 8)
+            
+            if(height_width >= 53){
+                height_width = 52
+            }
+            bottom_note_img_width_constraint.constant = height_width
+            bottom_note_img_height_constraint.constant = height_width
+            bottom_play_img_width_constraint.constant = height_width
+            bottom_play_img_height_constraint.constant = height_width
+            bottom_record_img_width_constraint.constant = height_width
+            bottom_record_img_height_constraint.constant = height_width
+            
+            myActivityIndicator.center = view.center
+            view.addSubview(myActivityIndicator)
+            audio_scrubber_ref.setMaximumTrackImage(UIImage(named: Utils.shared.audio_scrubber_color), for: .normal)
+            audio_scrubber_ref.addTarget(self, action: #selector(self.updateSliderLabelInstant(sender:)), for: .allEvents)
+            note_img_ref.image = UIImage(named: Utils.shared.note_img_name)
+            
+            no_of_recording_view_ref.layer.cornerRadius = 6
+            get_num_of_audio_in_project()
+            
+            self.myActivityIndicator.stopAnimating()
+            keyboardHeight = KeyboardService.keyboardHeight()
+            recording_view_height_constraint.constant = keyboardHeight
+            self.view.layoutIfNeeded()
+            
+            // Do any additional setup after loading the view.
+            NotificationCenter.default.addObserver(self, selector: #selector(CollabrationViewController.updateTextView(notification:)), name: Notification.Name.UIKeyboardWillChangeFrame, object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(CollabrationViewController.updateTextView(notification:)), name: Notification.Name.UIKeyboardWillHide, object: nil)
+            check_record_permission()
         }
-        self.chatTbl.delegate = self
-        self.chatTbl.dataSource = self
-        self.lyricsTxtView.delegate = self
-        lyricsTxtView.becomeFirstResponder()
-        self.chatTbl.rowHeight = UITableViewAutomaticDimension
-        
-        let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(CollabrationViewController.dismissKeyboard))
-        view.addGestureRecognizer(tap)
-        let nibName = UINib(nibName: Utils.shared.reciverNibName, bundle: nil)
-        chatTbl.register(nibName, forCellReuseIdentifier: Utils.shared.reciverCellIdentifier)
-        manager = CBCentralManager(delegate: self, queue: nil, options: nil)
-        manager.delegate = self
-        let screenWidth = UIScreen.main.bounds.width
-        var height_width = ((screenWidth / 5) - 8)
-        
-        if(height_width >= 53){
-            height_width = 52
-        }
-        bottom_note_img_width_constraint.constant = height_width
-        bottom_note_img_height_constraint.constant = height_width
-        bottom_play_img_width_constraint.constant = height_width
-        bottom_play_img_height_constraint.constant = height_width
-        bottom_record_img_width_constraint.constant = height_width
-        bottom_record_img_height_constraint.constant = height_width
-        
-        myActivityIndicator.center = view.center
-        view.addSubview(myActivityIndicator)
-        audio_scrubber_ref.setMaximumTrackImage(UIImage(named: Utils.shared.audio_scrubber_color), for: .normal)
-        audio_scrubber_ref.addTarget(self, action: #selector(self.updateSliderLabelInstant(sender:)), for: .allEvents)
-        note_img_ref.image = UIImage(named: Utils.shared.note_img_name)
-        //  self.lyrics_txtview_ref.delegate = self
-        
-        if(lyrics_key != "" && lyrics_text != "")
-        {
-            //   lyrics_txtview_ref.text = lyrics_text
-        }
-        no_of_recording_view_ref.layer.cornerRadius = 6
-        get_num_of_audio_in_project()
-        
-        self.myActivityIndicator.stopAnimating()
-        keyboardHeight = KeyboardService.keyboardHeight()
-        recording_view_height_constraint.constant = keyboardHeight
-        self.view.layoutIfNeeded()
-        
-        //        // Do any additional setup after loading the view.
-        NotificationCenter.default.addObserver(self, selector: #selector(CollabrationViewController.updateTextView(notification:)), name: Notification.Name.UIKeyboardWillChangeFrame, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(CollabrationViewController.updateTextView(notification:)), name: Notification.Name.UIKeyboardWillHide, object: nil)
-        check_record_permission()
-        // Do any additional setup after loading the view.
-        
     }
     
     override func viewWillAppear(_ animated: Bool) {
         
+        lyricsTxtView.currentState = .paste
         NotificationCenter.default.addObserver(self, selector: #selector(CollabrationViewController.updateTextView(notification:)), name: Notification.Name.UIKeyboardWillChangeFrame, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(CollabrationViewController.updateTextView(notification:)), name: Notification.Name.UIKeyboardWillHide, object: nil)
     }
     
     
     override func viewWillDisappear(_ animated: Bool) {
+        
+        updateIsActiveStatus(isActive: false)
         
         NotificationCenter.default.removeObserver(self, name: Notification.Name.UIKeyboardWillChangeFrame, object: nil)
         NotificationCenter.default.removeObserver(self, name: Notification.Name.UIKeyboardWillHide, object: nil)
@@ -276,27 +329,44 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
     }
     //MARK: Update textView constraints with Keyboard Hide Or Show
     func updateTextView(notification : Notification){
-         if(flag_open_recording_view){
-            whole_view_bottom_constraint.constant = 40.0
-            play_recording_view.alpha = 0.0
-            flag_open_recording_view = false
-        }
         
-        let userInfo = notification.userInfo!
-        let keyboardEndFrameScreenCoordinates = (userInfo[UIKeyboardFrameEndUserInfoKey] as! NSValue).cgRectValue
-        let keyboardEndFrame = self.view.convert(keyboardEndFrameScreenCoordinates, to: view.window)
-        
-        if notification.name == Notification.Name.UIKeyboardWillHide{
-            //lyrics_txtview_ref.contentInset = UIEdgeInsets.zero
-            //  lyrics_txtview_ref.contentInset = UIEdgeInsetsMake(0, 0, keyboardEndFrame.height - 200, 0)
-            whole_view_bottom_constraint.constant = 40.0
-        }else{
-            // lyrics_txtview_ref.contentInset = UIEdgeInsetsMake(0, 0, keyboardEndFrame.height - 200, 0)
-            //  lyrics_txtview_ref.scrollIndicatorInsets = lyrics_txtview_ref.contentInset
-            self.play_recording_view.isHidden = false
-            whole_view_bottom_constraint.constant = keyboardEndFrame.height - 20
+        if !lyricsTxtView.isHidden {
+            
+            if(flag_open_recording_view){
+                whole_view_bottom_constraint.constant = 40.0
+                play_recording_view.alpha = 0.0
+                flag_open_recording_view = false
+            }
+            
+            let userInfo = notification.userInfo!
+            let keyboardEndFrameScreenCoordinates = (userInfo[UIKeyboardFrameEndUserInfoKey] as! NSValue).cgRectValue
+            let keyboardEndFrame = self.view.convert(keyboardEndFrameScreenCoordinates, to: view.window)
+            
+            if notification.name == Notification.Name.UIKeyboardWillHide{
+                whole_view_bottom_constraint.constant = 40.0
+            }else{
+                self.play_recording_view.isHidden = false
+                whole_view_bottom_constraint.constant = keyboardEndFrame.height - 20
+            }
+            
+            if playRecordingViewHeightConstraint.constant == 150 {
+                
+                self.play_recording_view.isHidden = false
+            }
+            else {
+                
+                whole_view_bottom_constraint.constant = -40
+                
+                self.play_recording_view.isHidden = true
+//                whole_view_bottom_constraint.constant = 0
+            }
         }
-        //   lyrics_txtview_ref.scrollRangeToVisible(lyrics_txtview_ref.selectedRange)
+        else {
+            
+            if notification.name == Notification.Name.UIKeyboardWillHide{
+                whole_view_bottom_constraint.constant = 40.0
+            }
+        }
     }
     
     
@@ -348,67 +418,57 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
             break
         }
     }
+    
     func getCollabratorsData() {
         
-        
-        
         var ref: DatabaseReference!
-        
         ref = Database.database().reference()
-        
         ref.child("collaborations").child(currentProjectId).child(collabrationID).observeSingleEvent(of: .value, with: { (snap) in
-            
-            
-            self.recipientList.removeAll()
             
             if snap.exists() {
                 
+                self.recipientList.removeAll()
                 
-                
+                var childCount = 0
                 for task in snap.children {
-                    
                     
                     
                     guard let taskSnapshot = task as? DataSnapshot else { return }
                     
-                    
-                    
                     guard let userIdKey = taskSnapshot.key as? String else { return }
+                    
+                    var isActiveStatus = false
+                    if let dict = taskSnapshot.value as? [String : Any] {
+                        
+                        if let isActive = dict["is_active"] as? Bool {
+                            
+                            isActiveStatus = isActive
+                        }
+                    }
                     
                     ref.child(userIdKey).child("profile").observeSingleEvent(of: .value, with: { (innerSnap) in
                         
-                        
-                        
                         if innerSnap.exists() {
                             
-                            
+                            childCount += 1
                             
                             var receivedData = innerSnap.value as! [String: Any]
                             
-                            
-                            
                             receivedData["userId"] = userIdKey
+                            receivedData["is_active"] = isActiveStatus
                             
                             self.recipientList.append(receivedData)
                             
-                            
-                            
-                            self.setImageOnNavigationBar()
-                            
+                            if childCount == snap.childrenCount {
+                                
+                                self.setImageOnNavigationBar()
+                            }
                         }
-                        
                     })
-                   
-                    
                 }
-                
             }
-            
         })
-        
     }
-    
-    
     
     func setImageOnNavigationBar() {
         
@@ -454,50 +514,110 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
         userImg2.sd_setImage(with: URL(string: imgUrl2), placeholderImage: #imageLiteral(resourceName: "Image1"))
     }
     
-    func getDataForTable(){
+    func getIsActiveStatus() {
         
-        let userID = Auth.auth().currentUser?.uid
-        let userRef = FirebaseManager.getRefference().ref
-        userRef.child("collaborations").child(self.currentProjectId).child(self.collabrationID).observe(.value, with: { (snapshot) in
-            self.lyriscData.removeAll()
-            for i in snapshot.children{
-                guard let taskSnapshot = i as? DataSnapshot else {
+        self.refHandlerForIsActiveStatus = FirebaseManager.getRefference().ref.child("collaborations").child(self.currentProjectId).child(self.collabrationID)
+        
+        _ = self.refHandlerForIsActiveStatus.observe(.value, with: { snapshot in
+            
+            for snapChild in snapshot.children {
+                
+                guard let snap = snapChild as? DataSnapshot else {
                     return
                 }
-                if taskSnapshot.key == userID{
-                    if let receivedMessage = taskSnapshot.value as? [String: Any] {
-                        if let lyrics = receivedMessage["lyrics"] as?  NSDictionary {
-                            let lyrics_key = lyrics.allKeys as! [String]
-                            for key in lyrics_key
-                            {
-                                let lyrics_data = lyrics.value(forKey: key) as! NSDictionary
-                                let desc = lyrics_data.value(forKey: "desc") as! String
-                                self.lyricsTxtView.text = desc
+
+                if let snapDict = snap.value as? [String : Any] {
+                    
+                    for i in 0..<self.recipientList.count {
+                        
+                        if var recipientDict = self.recipientList[i] as? [String : Any] {
+                            
+                            if let userId = recipientDict["userId"] as? String {
+                                
+                                if userId == snap.key {
+                                    
+                                    recipientDict["is_active"] = snapDict["is_active"]
+                                    
+                                    self.recipientList[i] = recipientDict
+                                }
                             }
                         }
                     }
+
+                    self.collaboratorCollectionViewObj.reloadData()
+                }
+            }
+        })
+        
+    }
+    func getDataForTable() {
+        
+        let userID = Auth.auth().currentUser?.uid
+        
+        CollaborationFirebaseManager.getCollaborationBucketDataByCollaborationId(projectId: currentProjectId, collaborationId: collabrationID, completion: {(dict) in
+            
+            self.lyriscData.removeAll()
+            
+            for (key, value) in dict {
+                
+                if let valueDict = value as? [String : Any] {
                     
-                }else{
-                    if let receivedMessage = taskSnapshot.value as? [String: Any] {
+                    if key == userID {
+                        
+                        if self.needToUpdateTextView {
+                            
+                            if valueDict.count > 0 {
+                                
+                                if let lyrics = valueDict["lyrics"] as?  NSDictionary {
+                                    let lyrics_key = lyrics.allKeys as! [String]
+                                    for key in lyrics_key
+                                    {
+                                        let lyrics_data = lyrics.value(forKey: key) as! NSDictionary
+                                        let desc = lyrics_data.value(forKey: "desc") as! String
+                                        self.lyricsTxtView.text = desc
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        
                         var lyricsDict = [String: Any]()
                         
-                        if let lyrics_color = receivedMessage["lyrics_color"] as? String{
+                        var userName = ""
+                        
+                        for i in 0..<self.recipientList.count {
+                            
+                            if let dict = self.recipientList[i] as? [String : Any] {
+                                
+                                let id = key as? String
+                                let dictUserId = dict["userId"] as? String
+                                
+                                if dictUserId == id {
+                                    
+                                    userName = dict["artist_name"] as! String
+                                    lyricsDict["artist_name"] = userName
+                                    break
+                                }
+                            }
+                        }
+                        
+                        if let lyrics_color = valueDict["lyrics_color"] as? String{
                             lyricsDict["lyrics_color"] = lyrics_color
                         }
                         
-                        if let isActive = receivedMessage["is_active"] as? Bool {
+                        if let isActive = valueDict["is_active"] as? Bool {
                             lyricsDict["is_active"] = isActive
                         }
                         
                         var desc = ""
                         
-                        if let lyrics = receivedMessage["lyrics"] as?  NSDictionary {
+                        if let lyrics = valueDict["lyrics"] as?  NSDictionary {
                             let lyrics_key = lyrics.allKeys as! [String]
                             for key in lyrics_key
                             {
                                 let lyrics_data = lyrics.value(forKey: key) as! NSDictionary
                                 desc = lyrics_data.value(forKey: "desc") as! String
-                                //                                self.lyriscData.append(desc)
                                 lyricsDict["desc"] = desc
                             }
                         }
@@ -511,23 +631,14 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
                             
                             self.chatTbl.reloadData()
                         }
-                        
                     }
                 }
-                
-                
             }
-            
         })
-        
     }
     
     override func viewDidAppear(_ animated: Bool)
     {
-            self.showAudio_btn.isHidden = true
-            recipientList.removeAll()
-            getCollabratorsData()
-            getDataForTable()
             if(!isAudioRecordingGranted){
                 check_record_permission()
             }
@@ -544,13 +655,11 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
                     
                     UIView.animate(withDuration: 0.1, animations : {
                         self.note_img_ref.transform = CGAffineTransform(scaleX: 1.3, y: 1.3)
-                        //  self.lyrics_txtview_ref.becomeFirstResponder()
                     }, completion: {(finished : Bool) in
                         if(finished)
                         {
                             UIView.animate(withDuration: 0.5, animations : {
                                 self.note_img_ref.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
-                                //self.lyrics_txtview_ref.becomeFirstResponder()
                             }, completion: {(finished : Bool) in
                                 if(finished)
                                 {
@@ -608,50 +717,230 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
         
         let changeInHeight = (keyboardFrame.height) * (show ? 1 : -1)
         let viewHeight = (show ? 1 : -1)
-        // let viewHeight = (show ? 135 : -135)
+        
         UIView.animate(withDuration: animationDurarion, animations: { () -> Void in
             
-            // self.lyrics_textView_bottom_Const.constant += changeInHeight
             self.recording_view_height_constraint.constant += CGFloat(viewHeight)
-            //            self.lyrics_chattbl_bottom.constant += changeInHeight
         })
     }
     
     //MARK: TextViewDelegate method
     func textViewDidBeginEditing(_ textView: UITextView) {
-        updateIsActiveStatus(isActive: true)
+        
+        if !lyricsTxtView.isHidden {
+
+            writeLyricsButton.isSelected = true
+            writeLyricsButtonTapped((Any).self)
+            
+            updateIsActiveStatus(isActive: true)
+        }
     }
     
     func textViewDidEndEditing(_ textView: UITextView) {
-        updateIsActiveStatus(isActive: false)
+        
+        if !lyricsTxtView.isHidden {
+
+            updateIsActiveStatus(isActive: false)
+        }
     }
     func textViewDidChange(_ textView: UITextView) {
    
-        updateLyricsData()
+        if !lyricsTxtView.isHidden {
+
+            updateLyricsData()
+        }
     }
     
-    //    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-    //        self.view.endEditing(true)
-    //        return false
-    //    }
+    public func textViewDidChangeSelection(_ textView: UITextView)
+    {
+        if !lyricsTxtView.isHidden {
+            
+            needToUpdateTextView = false
+            lyrics_save_flag = false
+            if(!backpress)
+            {
+                do
+                {
+                    if let textRange = lyricsTxtView.selectedTextRange {
+                        
+                        var selectedText = lyricsTxtView.text(in: textRange)
+                        
+                        if (selectedText != nil && !(selectedText?.isEmpty)! && open_lyrics_rythm == false && (!(selectedText?.contains(" "))!))
+                        {
+                            if(Reachability.isConnectedToNetwork())
+                            {
+                                selectedText = selectedText?.replacingOccurrences(of: "\n", with: "")
+                                let len = selectedText!.count
+                                
+                                if(len > 0)
+                                {
+                                    
+                                    selectedText_length = len
+                                    main_string = lyricsTxtView.text
+                                    
+                                    start_index = lyricsTxtView.offset(from: lyricsTxtView.beginningOfDocument, to: textRange.start)
+                                    
+                                    if(start_index == 0)
+                                    {
+                                        main_string = " " + main_string
+                                        start_index = start_index + 1
+                                    }
+                                    
+                                    let myrange = NSMakeRange(start_index, selectedText_length)
+                                    let attributedString = NSMutableAttributedString(string:main_string)
+                                    selectedText = selectedText?.replacingOccurrences(of: "\n", with: "")
+                                    let txt_view_range = NSMakeRange(0, (main_string.count))
+                                    lyricsTxtView.currentState = .none
+                                    let attributes = [NSForegroundColorAttributeName: UIColor(red: 55/255, green: 74/255, blue: 103/255, alpha: 1), NSFontAttributeName: UIFont(name: "Avenir-Medium", size: 17.0)!] as [String : Any]
+                                    attributedString.addAttributes(attributes, range: txt_view_range)
+                                    
+                                    let attributes_selected = [NSForegroundColorAttributeName: UIColor.white, NSBackgroundColorAttributeName: UIColor(red: 47/255, green: 201/255, blue: 143/255, alpha: 1)] as [String : Any]
+                                    attributedString.addAttributes(attributes_selected , range: myrange)
+                                    lyricsTxtView.attributedText = attributedString
+                                    
+                                    self.view.endEditing(true)
+                                    old_string = selectedText!
+                                    open_lyrics_rythm = true
+                                    let popvc = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "DataMouseData_sid") as! DataMouseVC
+                                    popvc.myProtocol = self
+                                    popvc.mySelectedWord = selectedText!
+                                    self.addChildViewController(popvc)
+                                    popvc.view.frame = self.view.frame
+                                    popvc.view.frame.origin.y = lyricsTxtView.frame.origin.y
+                                    
+                                    self.view.addSubview(popvc.view)
+                                    popvc.didMove(toParentViewController: self)
+                                    
+                                }
+                            }
+                            else
+                            {
+                                selectedText = selectedText?.replacingOccurrences(of: "\n", with: "")
+                                let len = selectedText!.count
+                                
+                                if(len > 0)
+                                {
+                                    
+                                    selectedText_length = len
+                                    main_string = lyricsTxtView.text
+                                    start_index = lyricsTxtView.offset(from: lyricsTxtView.beginningOfDocument, to: textRange.start)
+                                    
+                                    if(start_index == 0)
+                                    {
+                                        main_string = " " + main_string
+                                        start_index = start_index + 1
+                                    }
+                                    
+                                    let myrange = NSMakeRange(start_index, selectedText_length)
+                                    let attributedString = NSMutableAttributedString(string:main_string)
+                                    
+                                    let txt_view_range = NSMakeRange(0, (main_string.count))
+                                    
+                                    lyricsTxtView.currentState = .none
+                                    let attributes = [NSForegroundColorAttributeName: UIColor(red: 55/255, green: 74/255, blue: 103/255, alpha: 1), NSFontAttributeName: UIFont(name: "Avenir-Medium", size: 17.0)!] as [String : Any]
+                                    attributedString.addAttributes(attributes, range: txt_view_range)
+                                    
+                                    let attributes_selected = [NSForegroundColorAttributeName: UIColor.white, NSBackgroundColorAttributeName: UIColor(red: 47/255, green: 201/255, blue: 143/255, alpha: 1)] as [String : Any]
+                                    attributedString.addAttributes(attributes_selected , range: myrange)
+                                    
+                                    
+                                    lyricsTxtView.attributedText = attributedString
+                                    old_string = selectedText!
+                                    open_lyrics_rythm = true
+                                    let popvc = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "DataMouseData_sid") as! DataMouseVC
+                                    popvc.myProtocol = self
+                                    popvc.mySelectedWord = selectedText!
+                                    self.addChildViewController(popvc)
+                                    popvc.view.frame = self.view.frame
+                                    popvc.view.frame.origin.y = lyricsTxtView.frame.origin.y
+                                    self.view.addSubview(popvc.view)
+                                    popvc.didMove(toParentViewController: self)
+                                }
+                            }
+                        }
+                        else{
+                            main_string = lyricsTxtView.text
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        flag_update_data = true
+        count_character = count_character + 1
+        
+        if(count_character == 50){
+            self.count_character = 0
+            if(Reachability.isConnectedToNetwork())
+            {
+                self.update_flag = true
+            }
+        }
+        
+        let  char = text.cString(using: String.Encoding.utf8)!
+        let isBackSpace = strcmp(char, "\\b")
+        
+        if (isBackSpace == -92) {
+            
+            backpress = true
+        }
+        else
+        {
+            backpress = false
+            if(open_lyrics_rythm)
+            {
+                if self.childViewControllers.count > 0{
+                    let viewControllers:[UIViewController] = self.childViewControllers
+                    for viewContoller in viewControllers{
+                        viewContoller.willMove(toParentViewController: nil)
+                        viewContoller.view.removeFromSuperview()
+                        viewContoller.removeFromParentViewController()
+                    }
+                }
+                let attributedString = NSMutableAttributedString(string:main_string)
+                let txt_view_range = NSMakeRange(0, (main_string.count))
+                
+                let attributes = [NSForegroundColorAttributeName: UIColor(red: 55/255, green: 74/255, blue: 103/255, alpha: 1), NSFontAttributeName: UIFont(name: "Avenir-Medium", size: 17.0)!] as [String : Any]
+                attributedString.addAttributes(attributes, range: txt_view_range)
+                lyricsTxtView.attributedText = attributedString
+                open_lyrics_rythm = false
+            }
+        }
+        return true
+    }
+    
+    public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        
+        if lyricsTxtView.isEditable {
+            
+            doneButtonAction()
+        }
+    }
+
+    func scrollTextViewToBottom(textView: UITextView) {
+        if textView.text.count > 0 {
+            let location = textView.text.count - 1
+            let bottom = NSMakeRange(location, 1)
+            textView.scrollRangeToVisible(bottom)
+        }
+    }
     
     func updateIsActiveStatus(isActive: Bool) {
         
         let userID = Auth.auth().currentUser?.uid
         
-        let ref = Database.database().reference()
-        ref.child("collaborations").child(currentProjectId).child(collabrationID).child(userID!).observeSingleEvent(of: .value, with: { (snap) in
-            
-            if snap.exists() {
+        CollaborationFirebaseManager.getUserDataFromCollaborationBucketByCollaborationId(projectId: currentProjectId, collaborationId: collabrationID, userId: userID!, completion: {(profileDict) in
+
+            if profileDict.count > 0 {
                 
-                guard let taskSnapshot = snap as? DataSnapshot else {
-                    return
-                }
+                var dict = profileDict
                 
-                var receivedData = taskSnapshot.value as! [String: Any]
-                
-                receivedData["is_active"] = isActive
-                ref.child("collaborations").child(self.currentProjectId).child(self.collabrationID).child(userID!).setValue(receivedData, withCompletionBlock: { (error, reference) in
+                dict["is_active"] = isActive
+               
+                let ref = Database.database().reference()
+                ref.child("collaborations").child(self.currentProjectId).child(self.collabrationID).child(userID!).setValue(dict, withCompletionBlock: { (error, reference) in
                     
                 })
             }
@@ -665,7 +954,7 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
         loop_lbl_ref.textColor = UIColor(red: 47/255, green: 201/255, blue: 143/255, alpha: 1.0)
     }
     func lyrics_info(lyrics_data: String, lyrics_id: String) {
-        //   lyrics_txtview_ref.text = lyrics_data
+        
         lyrics_key = lyrics_id
     }
     func initialize_audio_and_play()
@@ -854,14 +1143,6 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
             open_close_recording_view()
             if(isRecording)
             {
-                //                if let my_txt = lyrics_txtview_ref.text{
-                //                    lyrics_text = my_txt
-                //                }else{
-                //                    display_alert(msg_title: "Lyrics can not be null", msg_desc: "", action_title: "OK")
-                //                }
-                //lyrics_text = lyrics_txtview_ref.text
-                // self.tabBarController?.tabBar.isHidden = false
-                
                 finishAudioRecording(success: true)
                 
                 isRecording = false
@@ -885,7 +1166,7 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
             {
                 if(!lyrics_save_flag)
                 {
-                    //    lyrics_text = lyrics_txtview_ref.text
+                    
                     if(Reachability.isConnectedToNetwork())
                     {
                         if(lyrics_text != "")
@@ -951,7 +1232,7 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
             }
             else
             {
-                self.display_alert(msg_title: Utils.shared.project_not_found, msg_desc: Utils.shared.cant_found_project, action_title: "OK")
+                self.display_alert(msg_title: Utils.shared.project_not_found, msg_desc: Utils.shared.cant_find_project, action_title: "OK")
             }
             
             if(!Reachability.isConnectedToNetwork())
@@ -1109,7 +1390,7 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
             }
             else
             {
-                self.display_alert(msg_title: Utils.shared.project_not_found, msg_desc: Utils.shared.cant_found_project, action_title: "OK")
+                self.display_alert(msg_title: Utils.shared.project_not_found, msg_desc: Utils.shared.cant_find_project, action_title: "OK")
                 self.myActivityIndicator.stopAnimating()
             }
         }
@@ -1121,7 +1402,6 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
         let vc : BigLyricsVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "big_lyrics_sid") as! BigLyricsVC
         vc.lyrics_data_ptotocol = self
         vc.project_key = selected_project_key
-        //vc.get_data = lyrics_txtview_ref.text
         vc.lyrics_key = lyrics_key
         self.present(vc, animated: true, completion: nil)
     }
@@ -1130,7 +1410,7 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
         self.myActivityIndicator.startAnimating()
         if(self.lyrics_text == "")
         {
-            self.display_alert(msg_title: Utils.shared.cant_null, msg_desc: Utils.shared.please_write_something, action_title: "OK")
+            self.display_alert(msg_title: "", msg_desc: Utils.shared.please_write_something, action_title: "OK")
             self.myActivityIndicator.stopAnimating()
         }else{
             let lyrics_data: [String: Any] = ["desc": self.lyrics_text]
@@ -1158,7 +1438,7 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
                         }
                     })
                 }else{
-                    self.display_alert(msg_title: Utils.shared.project_not_found, msg_desc: Utils.shared.cant_found_project, action_title: "OK")
+                    self.display_alert(msg_title: Utils.shared.project_not_found, msg_desc: Utils.shared.cant_find_project, action_title: "OK")
                     self.myActivityIndicator.stopAnimating()
                 }
             }
@@ -1205,7 +1485,6 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
         Utils.shared.set_CircleView(view: usercountView)
         self.display_bpm_view_ref.isHidden = true
         userImg2.isHidden = true
-        //        usercountView.isHidden = true
         chatcountLbl.isHidden = true
     }
     override func didReceiveMemoryWarning() {
@@ -1219,9 +1498,266 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
         }
         let viewController : ChatViewController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "ChatVC") as! ChatViewController
         viewController.recipientListForHeader = self.recipientList
-        viewController.currentProjectId = currentProjectId
-        viewController.currentCollaborationId = collabrationID
+        ChatViewController.currentProjectId = currentProjectId
+        ChatViewController.currentCollaborationId = collabrationID
+        viewController.isComeFromNotification = false
         self.navigationController?.pushViewController(viewController, animated: true)
+    }
+    
+    @IBAction func expandBtnTapped(_ sender: Any) {
+        
+        if isPlayerHidden {
+            
+            expandBtn.setTitle("Hide Player", for: .normal)
+            isPlayerHidden = false
+            
+            self.play_recording_view.isHidden = false
+            whole_view_bottom_constraint.constant = 0
+            
+            playRecordingViewHeightConstraint.constant = 150
+        }
+        else {
+            
+            expandBtn.setTitle("Show Player", for: .normal)
+            isPlayerHidden = true
+            
+            if let player = audioPlayer{
+                player.pause()
+            }
+            self.dismissKeyboard()
+            whole_view_bottom_constraint.constant = -40
+            self.play_recording_view.isHidden = true
+            
+            playRecordingViewHeightConstraint.constant = 40
+        }
+    }
+    
+    @IBAction func settingsBtnTapped(_ sender: Any) {
+        
+        let vc : ListOfCollaboratorsViewController = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "ListOfCollaboratorsViewController") as! ListOfCollaboratorsViewController
+        vc.collaboratioId = collabrationID
+        vc.currentProjectId = currentProjectId
+        
+        self.navigationController?.pushViewController(vc, animated: true)
+    }
+    
+    @IBAction func collaborationBtnTapped(_ sender: Any) {
+        
+        doneButtonAction()
+        
+        needToShowCollectionView = true
+        
+        let userID = Auth.auth().currentUser?.uid
+        
+        var currentUserPosition = 0
+        
+        for i in 0..<recipientList.count {
+            
+            if var dict = recipientList[i] as? [String : Any] {
+                
+                if let id = dict["userId"] as? String, id == userID {
+                    
+                    currentUserPosition = i
+                }
+                
+                dict["isSelected"] = false
+                
+                recipientList[i] = dict
+            }
+        }
+        
+        var currentUserDictionary = recipientList[currentUserPosition]
+        currentUserDictionary["isSelected"] = true
+        
+            switch recipientList.count {
+            case 1:
+                
+                recipientList[currentUserPosition] = currentUserDictionary
+            case 2,3:
+                
+                if currentUserPosition != 1 {
+                    
+                    let d = recipientList[1]
+                    recipientList[1] = currentUserDictionary
+                    recipientList[currentUserPosition] = d
+                }
+                else {
+                    recipientList[currentUserPosition] = currentUserDictionary
+                }
+            case 4,5:
+                
+                if currentUserPosition != 2 {
+                    
+                let d = recipientList[2]
+                recipientList[2] = currentUserDictionary
+                recipientList[currentUserPosition] = d
+                }
+                else {
+                    recipientList[currentUserPosition] = currentUserDictionary
+                }
+            default:
+                
+                break
+            }
+    
+        setNavigationBar()
+        
+        getIsActiveStatus()
+    }
+    
+    func makeCurrentUserInMiddle() {
+        
+        
+    }
+    
+    func setNavigationBar() {
+        
+        if needToShowCollectionView {
+            
+            collaboratorCollectionViewObj.isHidden = false
+            arrowButtonObj.isHidden = false
+            collaborationButton.isHidden = true
+            userImg1.isHidden = true
+            userImg2.isHidden = true
+            usercountView.isHidden = true
+            chatcountLbl.isHidden = true
+            groupChatBtnOnNavigation.isHidden = true
+            
+            let screenWidth = UIScreen.main.bounds.width
+            
+            switch (recipientList.count) {
+            case 1:
+                collactionViewWidthConstraint.constant = 45
+            case 2:
+                collactionViewWidthConstraint.constant = 90
+            case 3:
+                collactionViewWidthConstraint.constant = 135
+            case 4:
+                
+                if screenWidth > 375 {
+                    
+                    collectionViewXConstraint.constant = -10
+                }
+                else {
+                    
+                    collectionViewXConstraint.constant = -10
+                }
+                collactionViewWidthConstraint.constant = 180
+            default:
+                
+                if screenWidth > 375 {
+                    
+                    collectionViewXConstraint.constant = -10
+                }
+                else {
+                    
+                    collectionViewXConstraint.constant = -25
+                }
+                collactionViewWidthConstraint.constant = 225
+            }
+            
+            arrowButtonLeadingConstraint.constant = collactionViewWidthConstraint.constant
+            
+            needToShowWriteButton = false
+            
+            for i in 0..<recipientList.count {
+                
+                if var dict = recipientList[i] as? [String : Any] {
+                    
+                    let userID = Auth.auth().currentUser?.uid
+                    
+                    if let isSelected = dict["isSelected"] as? Bool, isSelected, let id = dict["userId"] as? String, id == userID {
+                        
+                        needToShowWriteButton = true
+                        break
+                    }
+                }
+            }
+            
+            collaboratorCollectionViewObj.reloadData()
+        }
+        else {
+            
+            let userID = Auth.auth().currentUser?.uid
+            
+            CollaborationFirebaseManager.getUserDataFromCollaborationBucketByCollaborationId(projectId: currentProjectId, collaborationId: collabrationID, userId: userID!, completion: {(profileDict) in
+                
+                if profileDict.count > 0 {
+                    
+                    if let lyrics = profileDict["lyrics"] as?  NSDictionary {
+                        let lyrics_key = lyrics.allKeys as! [String]
+                        for key in lyrics_key
+                        {
+                            let lyrics_data = lyrics.value(forKey: key) as! NSDictionary
+                            let desc = lyrics_data.value(forKey: "desc") as! String
+                            self.lyricsTxtView.text = desc
+                        }
+                    }
+                    else {
+                        
+                        self.lyricsTxtView.text = ""
+                    }
+                }
+            })
+            
+            collaboratorCollectionViewObj.isHidden = true
+            arrowButtonObj.isHidden = true
+            collaborationButton.isHidden = false
+            userImg1.isHidden = false
+            userImg2.isHidden = false
+            usercountView.isHidden = false
+            chatcountLbl.isHidden = false
+            groupChatBtnOnNavigation.isHidden = false
+            
+            writeLyricsButton.isSelected = true
+            writLyricsBtnHeightConstraint.constant = 50
+            writeLyricsImageButton.isHidden = false
+            writeLyricsButton.isHidden = false
+        }
+    }
+    
+    @IBAction func writeLyricsButtonTapped(_ sender: Any) {
+        
+        if writeLyricsButton.isSelected {
+            
+            writeLyricsButton.isSelected = false
+            writLyricsBtnHeightConstraint.constant = 0
+            writeLyricsImageButton.isHidden = true
+            writeLyricsButton.isHidden = true
+            
+            lyricsTxtView.becomeFirstResponder()
+            
+            scrollTextViewToBottom(textView: lyricsTxtView)
+        }
+        else {
+            
+            writeLyricsButton.isSelected = true
+            writLyricsBtnHeightConstraint.constant = 50
+            writeLyricsImageButton.isHidden = false
+            writeLyricsButton.isHidden = false
+            
+            lyricsTxtView.resignFirstResponder()
+        }
+    }
+    
+    func addDoneButtonOnKeyboard() {
+        
+        let toolbarDone = UIToolbar.init()
+        toolbarDone.sizeToFit()
+        
+        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+
+        let barBtnDone = UIBarButtonItem.init(barButtonSystemItem: UIBarButtonSystemItem.done,
+                                              target: self, action: #selector(self.doneButtonAction))
+        
+        toolbarDone.items = [flexSpace, barBtnDone] // You can even add cancel button too
+        lyricsTxtView.inputAccessoryView = toolbarDone
+    }
+
+    func doneButtonAction() {
+        
+        writeLyricsButton.isSelected = false
+        writeLyricsButtonTapped((Any).self)
     }
     
     @IBAction func save_lyrics(_ sender: Any)
@@ -1231,79 +1767,75 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
             player.pause()
         }
         self.dismissKeyboard()
-        saveLyricsData()
         
-    }
-    //MARK: update Lyrics
-    func updateLyricsData(){
-        print(lyriscData.count)
-       
+        if needToShowCollectionView {
+            
+            needToShowExpandView = false
+            hideShowExpandView()
+            
+            needToShowCollectionView = false
+            
+            setNavigationBar()
+            
+            setImageOnNavigationBar()
+            
+            nonEditableLyricsTextView.isHidden = true
+            lyricsTxtView.isHidden = false
+            
+            refHandlerForIsActiveStatus.removeAllObservers()
+        }
+        else {
+            
+            self.navigationController?.popViewController(animated: true)
+        }
         
-        let userID = Auth.auth().currentUser?.uid
-        let userRef = FirebaseManager.getRefference().ref
-        userRef.child("collaborations").child(self.currentProjectId).child(self.collabrationID).child(userID!).observeSingleEvent(of: .value, with: { (snapshot) in
-            
-            var isLyricsNodePresent = false
-            var lyricsNodeId = ""
-            
-            for i in snapshot.children{
-                guard let taskSnapshot = i as? DataSnapshot else {
-                    return
-                }
-                if taskSnapshot.key == "lyrics"{
-                    
-                    isLyricsNodePresent = true
-                    
-                    for lyricsChild in taskSnapshot.children {
-                        let lyricsNode = lyricsChild as! DataSnapshot
-                        
-                        lyricsNodeId = (lyricsNode.key as? String)!
-                        break
-                    }
-                    
-                }
-            }
-            
-            let values = ["desc": self.lyricsTxtView.text] as [String : Any]
-            if isLyricsNodePresent {
-                Database.database().reference().child("collaborations").child(self.currentProjectId).child(self.collabrationID).child(userID!).child("lyrics").child(lyricsNodeId).setValue(values, withCompletionBlock: { (error, reference) in
-                    
-                })
-            } else {
-                Database.database().reference().child("collaborations").child(self.currentProjectId).child(self.collabrationID).child(userID!).child("lyrics").childByAutoId().setValue(values, withCompletionBlock: { (error, reference) in
-                    
-                })
-            }
-            
-        })
     }
     
-    //MARK: Save Lyrics
-    func saveLyricsData(){
-       // self.lyriscData.removeAll()
+    @IBAction func dropDownArrowTapped(_ sender: Any) {
+        
+        if needToShowWriteButton {
+            
+            writeLyricsButton.isSelected = true
+            writLyricsBtnHeightConstraint.constant = 50
+            writeLyricsImageButton.isHidden = false
+            writeLyricsButton.isHidden = false
+        }
+        else {
+            
+            writeLyricsButton.isSelected = false
+            writLyricsBtnHeightConstraint.constant = 0
+            writeLyricsImageButton.isHidden = true
+            writeLyricsButton.isHidden = true
+        }
+        
+        lyricsTxtView.resignFirstResponder()
+        hideShowExpandView()
+    }
+    
+    //MARK: update Lyrics
+    func updateLyricsData() {
+        
         
         let userID = Auth.auth().currentUser?.uid
-        let userRef = FirebaseManager.getRefference().ref
-        userRef.child("collaborations").child(self.currentProjectId).child(self.collabrationID).child(userID!).observeSingleEvent(of: .value, with: { (snapshot) in
+        CollaborationFirebaseManager.getUserDataFromCollaborationBucketByCollaborationId(projectId: currentProjectId, collaborationId: collabrationID, userId: userID!, completion: {(profileDict) in
             
             var isLyricsNodePresent = false
             var lyricsNodeId = ""
             
-            for i in snapshot.children{
-                guard let taskSnapshot = i as? DataSnapshot else {
-                    return
-                }
-                if taskSnapshot.key == "lyrics"{
+            for (key, value) in profileDict {
+                
+                if key == "lyrics"{
                     
                     isLyricsNodePresent = true
                     
-                    for lyricsChild in taskSnapshot.children {
-                        let lyricsNode = lyricsChild as! DataSnapshot
+                    if let valueDict = value as? [String : Any] {
                         
-                        lyricsNodeId = (lyricsNode.key as? String)!
-                        break
+                        for (childKey, _) in valueDict {
+                            
+                            lyricsNodeId = childKey
+                            break
+                        }
                     }
-                    
                 }
             }
             
@@ -1317,35 +1849,73 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
                     
                 })
             }
-            
-            self.showToast(message: "Lyrics Saved")
-            self.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(CollabrationViewController.updateViewController), userInfo: nil, repeats: true)
         })
-    }
-    func updateViewController(){
-        self.navigationController?.popViewController(animated: true)
     }
     
     @IBAction func showAudio_btn_clicked(_ sender: Any) {
         self.play_recording_view.isHidden = false
         whole_view_bottom_constraint.constant = -15
         lyricsTxtView.becomeFirstResponder()
-        self.showAudio_btn.isHidden = true
         self.fullscreen_lyrics.isHidden = false
     }
     @IBAction func full_screen_lyrics(_ sender: Any)
     {
-       
-        if let player = audioPlayer{
-            player.pause()
+        if !needToShowCollectionView {
+            
+            if isPlayerHidden {
+                
+                expandBtn.setTitle("Hide Player", for: .normal)
+                isPlayerHidden = false
+                
+                self.play_recording_view.isHidden = false
+                whole_view_bottom_constraint.constant = 0
+                
+                playRecordingViewHeightConstraint.constant = 150
+            }
+            else {
+                
+                expandBtn.setTitle("Show Player", for: .normal)
+                isPlayerHidden = true
+                
+                if let player = audioPlayer{
+                    player.pause()
+                }
+                self.dismissKeyboard()
+                whole_view_bottom_constraint.constant = -40
+                self.play_recording_view.isHidden = true
+                
+                playRecordingViewHeightConstraint.constant = 40
+            }
+            
         }
-        self.dismissKeyboard()
-        whole_view_bottom_constraint.constant = -40
-        self.play_recording_view.isHidden = true
-        self.fullscreen_lyrics.isHidden = true
-        self.showAudio_btn.isHidden = false
-        
     }
+    
+    func hideShowExpandView() {
+        
+        if needToShowExpandView {
+            
+            arrowButtonObj.setImage(UIImage(named: "gray_down_arrow"), for: .normal)
+            
+            needToShowExpandView = false
+            
+            expandViewObj.isHidden = false
+            expandBtn.isHidden = false
+            groupChatBtn.isHidden = false
+            settingsBtn.isHidden = false
+        }
+        else {
+            
+            arrowButtonObj.setImage(UIImage(named: "right_arrow-icon"), for: .normal)
+            
+            needToShowExpandView = true
+            
+            expandViewObj.isHidden = true
+            expandBtn.isHidden = true
+            groupChatBtn.isHidden = true
+            settingsBtn.isHidden = true
+        }
+    }
+    
     @IBAction func play_btn_click(_ sender: Any)
     {
         if(initialize_audio)
@@ -1429,7 +1999,6 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
             
             if(isRecording)
             {
-                //record_btn_ref.setImage(UIImage(named : "recording-start"), for: .normal)
                 self.record_img_ref.image = UIImage(named : "recording-start")
                 finishAudioRecording(success: true)
                 isRecording = false
@@ -1442,8 +2011,6 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
             vc.recording_file_url = recording_file_url
             vc.myProtocol = self
             self.present(vc, animated: true, completion: nil)
-            
-            //
         }
     }
     
@@ -1474,24 +2041,31 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = chatTbl.dequeueReusableCell(withIdentifier: Utils.shared.reciverCellIdentifier, for: indexPath) as! reciverCell
         
-        if let dict = lyriscData[indexPath.row] as? [String: Any] {
+        if lyriscData.count > 0 {
             
-            let desc = dict["desc"] ?? ""
-            cell.reciverLbl.text = desc as? String
-            
-            let lyricsColor = dict["lyrics_color"] ?? "#000000"
-            cell.reciverLbl.textColor = hexStringToUIColor(hex: lyricsColor as! String)
-            
-            if let isActive = dict["is_active"] as? Bool, isActive {
+            if let dict = lyriscData[indexPath.row] as? [String: Any] {
                 
-                cell.imageViewObj.loadGif(name: "typing_indicator")
-                cell.imageViewWidthConstraint.constant = 50
-            }
-            else {
+                let desc = dict["desc"] ?? ""
+                cell.reciverLbl.text = desc as? String
                 
-                cell.imageViewWidthConstraint.constant = 0
+                let name = dict["artist_name"] ?? ""
+                cell.senderNameLbl.text = name as? String
+                
+                let lyricsColor = dict["lyrics_color"] ?? "#000000"
+                cell.reciverLbl.textColor = hexStringToUIColor(hex: lyricsColor as! String)
+                
+                if let isActive = dict["is_active"] as? Bool, isActive {
+                    
+                    cell.imageViewObj.loadGif(name: "typing_indicator")
+                    cell.imagaViewWidthConstraint.constant = 50
+                }
+                else {
+                    
+                    cell.imagaViewWidthConstraint.constant = 0
+                }
             }
         }
+        
         return cell
     }
     
@@ -1504,6 +2078,200 @@ class CollabrationViewController: UIViewController,UITextViewDelegate, AVAudioPl
         
         return UITableViewAutomaticDimension
     }
+    
+    //MARK:- selectedDataProtocol
+    func getSelectedString(selectedWord: String) {
+        
+        isSelectedTextTableShown = true
+        
+        DispatchQueue.main.async {
+            let range = NSRange(location: self.start_index, length: self.selectedText_length)
+            
+            let newRange = Range(range, in: self.main_string)
+            
+            let new_text = self.main_string.replacingOccurrences(of: self.old_string, with: selectedWord, options: String.CompareOptions.caseInsensitive, range: newRange)
+            let attributedString1 = NSMutableAttributedString(string:new_text)
+            let txt_view_range1 = NSMakeRange(0, (new_text.count))
+            let attributes1 = [NSForegroundColorAttributeName: UIColor(red: 55/255, green: 74/255, blue: 103/255, alpha: 1), NSFontAttributeName: UIFont(name: "Avenir-Medium", size: 17.0)!] as [String : Any]
+            attributedString1.addAttributes(attributes1, range: txt_view_range1)
+            self.lyricsTxtView.attributedText = attributedString1
+            self.lyricsTxtView.text = new_text
+            self.main_string = new_text.trimmingCharacters(in: .whitespaces)
+            
+            let attributedString = NSMutableAttributedString(string:self.main_string)
+            let txt_view_range = NSMakeRange(0, (self.main_string.count))
+            
+            let attributes = [NSForegroundColorAttributeName: UIColor(red: 55/255, green: 74/255, blue: 103/255, alpha: 1), NSFontAttributeName: UIFont(name: "Avenir-Medium", size: 17.0)!] as [String : Any]
+            attributedString.addAttributes(attributes, range: txt_view_range)
+            self.lyricsTxtView.attributedText = attributedString
+            self.lyrics_text = self.main_string
+            self.flag_update_data = true
+            self.open_lyrics_rythm = false
+            self.lyricsTxtView.currentState = .select
+        }
+        
+        updateLyricsData()
+        
+        needToUpdateTextView = true
+    }
+    
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        
+        return recipientList.count
+    }
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        
+        return 1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CollaboratorList", for: indexPath) as! CollaboratorListCollectionViewCell
+
+        if let dict = recipientList[indexPath.section] as? [String : Any] {
+            
+            let imageUrl = dict["myimg"] ?? ""
+            
+            cell.userImage.sd_setImage(with: URL(string: imageUrl as! String), placeholderImage: #imageLiteral(resourceName: "Image1"))
+            
+            if let isSelected = dict["isSelected"] as? Bool, isSelected {
+                
+                cell.userImage.alpha = 1.0
+            }
+            else {
+                
+                cell.userImage.alpha = 0.5
+            }
+            
+            let userID = Auth.auth().currentUser?.uid
+            
+            if let isActive = dict["is_active"] as? Bool, isActive, let id = dict["userId"] as? String, id != userID {
+                
+                cell.isActiveStatusLbl.isHidden = false
+            }
+            else {
+                
+                cell.isActiveStatusLbl.isHidden = true
+            }
+        }
+
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        
+        refHandler.removeAllObservers()
+        
+        for i in 0..<recipientList.count {
+            
+            var dict = recipientList[i]
+            
+            if let isSelected = dict["isSelected"] as? Bool, isSelected {
+                
+                dict["isSelected"] = false
+            }
+            
+            recipientList[i] = dict
+        }
+        
+        if var dict = recipientList[indexPath.section] as? [String : Any] {
+            
+            dict["isSelected"] = true
+            recipientList[indexPath.section] = dict
+            
+            let userID = Auth.auth().currentUser?.uid
+            
+            if let id = dict["userId"] as? String, id == userID {
+                
+                needToShowWriteButton = true
+            }
+            else {
+                
+                needToShowWriteButton = false
+            }
+            
+            collaboratorCollectionViewObj.reloadData()
+        }
+        
+        if needToShowWriteButton {
+            
+            nonEditableLyricsTextView.isHidden = true
+            lyricsTxtView.isHidden = false
+            
+            writeLyricsButton.isSelected = true
+            writLyricsBtnHeightConstraint.constant = 50
+            writeLyricsImageButton.isHidden = false
+            writeLyricsButton.isHidden = false
+        }
+        else {
+            
+            nonEditableLyricsTextView.isHidden = false
+            lyricsTxtView.isHidden = true
+            
+            writeLyricsButton.isSelected = false
+            writLyricsBtnHeightConstraint.constant = 0
+            writeLyricsImageButton.isHidden = true
+            writeLyricsButton.isHidden = true
+            
+            self.view.endEditing(true)
+        }
+        
+        getDataForTextView(index: indexPath.section)
+    }
+    
+    func getDataForTextView(index: Int) {
+        
+        self.lyricsTxtView.text = ""
+        self.nonEditableLyricsTextView.text = ""
+
+        var userID = ""
+        
+        DispatchQueue.global(qos: .background).async {
+            
+            if var dict = self.recipientList[index] as? [String : Any] {
+                
+                if let id = dict["userId"] as? String {
+                    
+                    userID = id
+                }
+            }
+            
+            let currentUserId = Auth.auth().currentUser?.uid
+
+            self.refHandler = FirebaseManager.getRefference().ref.child("collaborations").child(self.currentProjectId).child(self.collabrationID).child(userID)
+            _ = self.refHandler.observe(.value, with: { snapshot in
+                
+                var dict = [String : Any]()
+                
+                if snapshot.exists() {
+                    
+                    dict = (snapshot.value as? [String : Any])!
+                    
+                    if let lyrics = dict["lyrics"] as?  NSDictionary {
+                        let lyrics_key = lyrics.allKeys as! [String]
+                        for key in lyrics_key
+                        {
+                            let lyrics_data = lyrics.value(forKey: key) as! NSDictionary
+                            let desc = lyrics_data.value(forKey: "desc") as! String
+                            
+                            DispatchQueue.main.async {
+                                
+                                if currentUserId == userID {
+                                    
+                                    self.lyricsTxtView.text = desc
+                                }
+                                else {
+                                    
+                                    self.nonEditableLyricsTextView.text = desc
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+        }
+    }
+    
     /*
      // MARK: - Navigation
      

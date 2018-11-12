@@ -38,7 +38,7 @@ class LocalImages {
         }
     }
     
-    class func saveImage(url: URL, timestamp: Int64) {
+    class func saveImage(url: URL, timestamp: Int64, completion: @escaping (Bool) -> Swift.Void) {
         
         DispatchQueue.global(qos: .background).async {
             
@@ -59,6 +59,7 @@ class LocalImages {
                         if !fileManager.fileExists(atPath: fileURL.path) {
                             
                             try pngImageData.write(to: fileURL, options: .atomic)
+                            completion(true)
                         }
                     }
                 } catch { }

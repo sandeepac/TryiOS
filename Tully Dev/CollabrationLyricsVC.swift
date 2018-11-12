@@ -19,25 +19,40 @@ class CollabrationLyricsVC: UIViewController,UITableViewDelegate,UITableViewData
     @IBOutlet weak var lyrics_tbl: UITableView!
     @IBOutlet weak var lyrics_txtView: UITextView!
     
+    @IBOutlet var writeLyricsImage: UIButton!
+    @IBOutlet var writeLyricsBtn: UIButton!
+    
+    @IBOutlet var writeBtnHeightConstraint: NSLayoutConstraint!
+    
     var lyriscData = [[String: Any]]()
     var current_project_id = String()
     var collaborationId = String()
     var timer = Timer()
-    
+    var isKeyboardAppeared = false
+    var recipientList = [[String:Any]]()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         self.lyrics_tbl.delegate = self
         self.lyrics_tbl.dataSource = self
         self.lyrics_txtView.delegate = self
-        lyrics_txtView.becomeFirstResponder()
+        writeLyricsBtn.isSelected = false
+        writeLyricsBtnTapped((Any).self)
+        addDoneButtonOnKeyboard()
         self.lyrics_tbl.rowHeight = UITableViewAutomaticDimension
         let nibName = UINib(nibName: Utils.shared.reciverNibName, bundle: nil)
         lyrics_tbl.register(nibName, forCellReuseIdentifier: Utils.shared.reciverCellIdentifier)
+        
+        let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(CollabrationLyricsVC.dismissKeyboard))
+        view.addGestureRecognizer(tap)
+
         // Do any additional setup after loading the view.
+        
+//        self.getCollabratorsData()
+        
+        self.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(CollabrationViewController.getDataForTable), userInfo: nil, repeats: true)
     }
     override func viewDidAppear(_ animated: Bool) {
-        getCollabratorsData()
-        getDataForTable()
     }
     
     //MARK: update Lyrics
@@ -125,7 +140,7 @@ class CollabrationLyricsVC: UIViewController,UITableViewDelegate,UITableViewData
             }
             
             self.showToast(message: "Lyrics Saved")
-            self.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(CollabrationViewController.updateViewController), userInfo: nil, repeats: true)
+            self.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(CollabrationLyricsVC.updateViewController), userInfo: nil, repeats: true)
         })
     }
     func updateViewController(){
@@ -168,56 +183,56 @@ class CollabrationLyricsVC: UIViewController,UITableViewDelegate,UITableViewData
     }
     override func viewWillAppear(_ animated: Bool) {
         
-//        containerViewHeightConstraint.constant = CGFloat(containerViewInitialHeight)
-//
-//        NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
-//
-//        NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
+
+        NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
     }
     override func viewWillDisappear(_ animated: Bool) {
         
-//        NotificationCenter.default.removeObserver(self, name: Notification.Name.UIKeyboardWillChangeFrame, object: nil)
-//        NotificationCenter.default.removeObserver(self, name: Notification.Name.UIKeyboardWillHide, object: nil)
+        NotificationCenter.default.removeObserver(self, name: Notification.Name.UIKeyboardWillChangeFrame, object: nil)
+        NotificationCenter.default.removeObserver(self, name: Notification.Name.UIKeyboardWillHide, object: nil)
     }
     //MARK: Keyboard Notification methods
     func keyboardWillShow(notification:NSNotification) {
         
-//        if !isKeyboardAppeared {
-//
-//            adjustingHeight(show:true, notification: notification)
-//
-//            isKeyboardAppeared = true
-//        }
+        if !isKeyboardAppeared {
+
+            adjustingHeight(show:true, notification: notification)
+
+            isKeyboardAppeared = true
+        }
     }
     
     func keyboardWillHide(notification:NSNotification) {
         
-//        isRecipientListShown = false
-//
-//        if isKeyboardAppeared {
-//
-//            isKeyboardAppeared = false
-//
-//            adjustingHeight(show:false, notification: notification)
-//        }
+        if isKeyboardAppeared {
+
+            isKeyboardAppeared = false
+
+            adjustingHeight(show:false, notification: notification)
+        }
     }
     
     func adjustingHeight(show:Bool, notification:NSNotification) {
         
-//        let userInfo = notification.userInfo!
-//        
-//        let keyboardFrame:CGRect = (userInfo[UIKeyboardFrameEndUserInfoKey] as! NSValue).cgRectValue
-//        
-//        let animationDurarion = userInfo[UIKeyboardAnimationDurationUserInfoKey] as! TimeInterval
-//        
-//        let changeInHeight = (keyboardFrame.height) * (show ? 1 : -1)
-//        
-//        keyboardHeight = Int(keyboardFrame.height)
-//        
-//        UIView.animate(withDuration: animationDurarion, animations: { () -> Void in
-//            self.containerViewBottomConstraint.constant += changeInHeight
-//        })
+        let userInfo = notification.userInfo!
+        
+        let keyboardFrame:CGRect = (userInfo[UIKeyboardFrameEndUserInfoKey] as! NSValue).cgRectValue
+        
+        let animationDurarion = userInfo[UIKeyboardAnimationDurationUserInfoKey] as! TimeInterval
+        
+        let changeInHeight = (keyboardFrame.height) * (show ? 1 : -1)
+        
+        UIView.animate(withDuration: animationDurarion, animations: { () -> Void in
+            self.lyrics_bottom_constraint.constant += changeInHeight
+        })
     }
+    
+    //MARK: Keyboard Hide
+    func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
     func getCollabratorsData() {
         
         
@@ -259,7 +274,7 @@ class CollabrationLyricsVC: UIViewController,UITableViewDelegate,UITableViewData
                             
                             receivedData["userId"] = userIdKey
                             
-                         //   self.recipientList.append(receivedData)
+                            self.recipientList.append(receivedData)
                             
                             
                             
@@ -277,12 +292,14 @@ class CollabrationLyricsVC: UIViewController,UITableViewDelegate,UITableViewData
         })
         
     }
-    func getDataForTable(){
+    func getDataForTable() {
         
         let userID = Auth.auth().currentUser?.uid
         let userRef = FirebaseManager.getRefference().ref
         userRef.child("collaborations").child(self.current_project_id).child(self.collaborationId).observe(.value, with: { (snapshot) in
+            
             self.lyriscData.removeAll()
+            
             for i in snapshot.children{
                 guard let taskSnapshot = i as? DataSnapshot else {
                     return
@@ -301,8 +318,26 @@ class CollabrationLyricsVC: UIViewController,UITableViewDelegate,UITableViewData
                     }
                     
                 }else{
+                    var lyricsDict = [String: Any]()
+                    
+                    var userName = ""
+                    
+                    for i in 0..<self.recipientList.count {
+                        
+                        if let dict = self.recipientList[i] as? [String : Any] {
+                            
+                            let id = taskSnapshot.key as? String
+                            let dictUserId = dict["userId"] as? String
+                            
+                            if dictUserId == id {
+                                
+                                userName = dict["artist_name"] as! String
+                                lyricsDict["artist_name"] = userName
+                                break
+                            }
+                        }
+                    }
                     if let receivedMessage = taskSnapshot.value as? [String: Any] {
-                        var lyricsDict = [String: Any]()
                         
                         if let lyrics_color = receivedMessage["lyrics_color"] as? String{
                             lyricsDict["lyrics_color"] = lyrics_color
@@ -320,7 +355,6 @@ class CollabrationLyricsVC: UIViewController,UITableViewDelegate,UITableViewData
                             {
                                 let lyrics_data = lyrics.value(forKey: key) as! NSDictionary
                                 desc = lyrics_data.value(forKey: "desc") as! String
-                                //                                self.lyriscData.append(desc)
                                 lyricsDict["desc"] = desc
                             }
                         }
@@ -332,18 +366,17 @@ class CollabrationLyricsVC: UIViewController,UITableViewDelegate,UITableViewData
                         
                         if !self.lyriscData.isEmpty {
                             
-                            self.lyrics_tbl.reloadData()
+//                            self.lyrics_tbl.reloadData()
                         }
                         
                     }
                 }
                 
-                
             }
             
         })
-        
     }
+    
     @IBAction func back_btn_cliked(_ sender: Any) {
         self.navigationController?.popViewController(animated: true)
     }
@@ -351,6 +384,54 @@ class CollabrationLyricsVC: UIViewController,UITableViewDelegate,UITableViewData
     @IBAction func done_btn_cliked(_ sender: Any) {
         saveLyricsData()
     }
+    
+    func addDoneButtonOnKeyboard() {
+        
+        let toolbarDone = UIToolbar.init()
+        toolbarDone.sizeToFit()
+        
+        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        
+        let barBtnDone = UIBarButtonItem.init(barButtonSystemItem: UIBarButtonSystemItem.done,
+                                              target: self, action: #selector(self.doneButtonAction))
+        
+        toolbarDone.items = [flexSpace, barBtnDone] // You can even add cancel button too
+        lyrics_txtView.inputAccessoryView = toolbarDone
+    }
+    
+    func doneButtonAction() {
+        
+        writeLyricsBtn.isSelected = false
+        writeLyricsBtnTapped((Any).self)
+    }
+    
+    @IBAction func writeLyricsBtnTapped(_ sender: Any) {
+        
+        if writeLyricsBtn.isSelected {
+            
+            writeLyricsBtn.isSelected = false
+            lyrics_txtView.isUserInteractionEnabled = true
+            
+            writeBtnHeightConstraint.constant = 0
+            writeLyricsImage.isHidden = true
+            writeLyricsBtn.isHidden = true
+            
+            lyrics_txtView.becomeFirstResponder()
+        }
+        else {
+            
+            writeLyricsBtn.isSelected = true
+            lyrics_txtView.isUserInteractionEnabled = false
+            
+            writeBtnHeightConstraint.constant = 50
+            writeLyricsImage.isHidden = false
+            writeLyricsBtn.isHidden = false
+            
+            lyrics_txtView.resignFirstResponder()
+        }
+    }
+    
+    
     //MARK: - UITableView Datasource
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return lyriscData.count
@@ -364,17 +445,20 @@ class CollabrationLyricsVC: UIViewController,UITableViewDelegate,UITableViewData
             let desc = dict["desc"] ?? ""
             cell.reciverLbl.text = desc as? String
             
+            let name = dict["artist_name"] ?? ""
+            cell.senderNameLbl.text = name as? String
+            
             let lyricsColor = dict["lyrics_color"] ?? "#000000"
             cell.reciverLbl.textColor = hexStringToUIColor(hex: lyricsColor as! String)
             
             if let isActive = dict["is_active"] as? Bool, isActive {
                 
                 cell.imageViewObj.loadGif(name: "typing_indicator")
-                cell.imageViewWidthConstraint.constant = 50
+                cell.imagaViewWidthConstraint.constant = 50
             }
             else {
                 
-                cell.imageViewWidthConstraint.constant = 0
+                cell.imagaViewWidthConstraint.constant = 0
             }
         }
         return cell

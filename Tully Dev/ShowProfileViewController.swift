@@ -9,7 +9,7 @@
 import UIKit
 import Firebase
 class ShowProfileViewController: UIViewController {
-   // MARK: - Outlets
+    // MARK: - Outlets
     @IBOutlet weak var lblMailId: UILabel!
     @IBOutlet weak var btnInvite: UIBarButtonItem!
     @IBOutlet weak var lblName: UILabel!
@@ -22,7 +22,7 @@ class ShowProfileViewController: UIViewController {
     var collaboratorImg = String()
     var projectId = String ()
     var ownerKey = String()
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         let uid = Auth.auth().currentUser?.uid
@@ -38,39 +38,24 @@ class ShowProfileViewController: UIViewController {
             imgProfile.sd_setImage(with: URL(string: collaboratorImg), placeholderImage: #imageLiteral(resourceName: "Image1"))
         }
         
-        if uid == ownerKey {
-            self.btnInvite.isEnabled = true
-           // btnRemove.isHidden = false
-        } else {
-            self.btnInvite.title = ""
-            self.btnInvite.tintColor = .clear
-            self.btnInvite.isEnabled = false
-        }
+        //        if uid == ownerKey {
+        //            self.btnInvite.isEnabled = true
+        //           // btnRemove.isHidden = false
+        //        } else {
+        self.btnInvite.title = ""
+        self.btnInvite.tintColor = .clear
+        self.btnInvite.isEnabled = false
+        //        }
         
     }
-
     
     @IBAction func actionInvite(_ sender: UIBarButtonItem) {
         let vc : InviteVC = UIStoryboard.init(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "InviteVC") as! InviteVC
         vc.projectCurrentId = projectId
         self.navigationController?.pushViewController(vc, animated: true)
     }
+    
     @IBAction func actionBack(_ sender: UIBarButtonItem) {
         self.navigationController?.popViewController(animated: true)
     }
-    
-    func image(img: String)-> UIImage{
-        var profleImg = UIImage()
-        let imageUrlString = img
-        if img == ""{
-            return #imageLiteral(resourceName: "profile-icon")
-        } else {
-            let imageUrl:URL = URL(string: imageUrlString)!
-            let imageData:NSData = NSData(contentsOf: imageUrl)!
-            let image = UIImage(data: imageData as Data)
-            profleImg = image!
-            return profleImg
-        }
-    }
-
 }
